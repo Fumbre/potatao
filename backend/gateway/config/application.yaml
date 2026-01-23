@@ -1,0 +1,15 @@
+app:
+  name: gateway
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+nacos:
+  server_ip: localhost
+  server_port: 8848
+  namespace: e5389dad-2a20-49bc-8195-cd390145e58b
+  group: DEFAULT_GROUP
+  data_id: patato-gateway.yaml
+  auth:
+    enabled: false
