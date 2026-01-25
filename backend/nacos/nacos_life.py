@@ -6,6 +6,9 @@ from fastapi import FastAPI
 import asyncio
 from nacos.nacos_client import Nacosclient
 from utils.config_load import load_local_config
+from utils.redisUtils import RedisClient
+
+redis_client = RedisClient()
 
 service_config = {}
 service_config_from_nacos = {}
@@ -36,4 +39,5 @@ async def listen_change(new_config:dict):
     global service_config_from_nacos
     service_config_from_nacos.clear()
     service_config_from_nacos.update(new_config)
+    redis_client.refresh()
     print("Nacos config updated:", service_config_from_nacos)
