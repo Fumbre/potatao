@@ -64,4 +64,21 @@ class Nacosclient:
                     await callback(config)
             except Exception as e:
                 print(f"get nacos configuration information failed: {e}")
-            await asyncio.sleep(interval)               
+            await asyncio.sleep(interval)
+
+
+
+    async def get_instance(self,service_name:str) -> list[dict]:
+        auth = (self.username, self.password) if self.auth_enabled and self.username and self.password else None
+        async with httpx.AsyncClient(auth=auth,timeout=10) as client:
+            resp = await client.get(
+                f"http://{self.server_ip}:{self.server_port}/nacos/v1/ns/instance/list",
+                params={
+                    "serviceName":service_name,
+                    "namespaceId":self.namespace
+                }
+            )
+
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("hosts", [])                       

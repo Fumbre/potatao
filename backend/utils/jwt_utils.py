@@ -1,6 +1,7 @@
 import jwt
 from jwt import InvalidTokenError
 from nacos.nacos_life import service_config_from_nacos
+from ..exceptions.base_exception import AuthException
 
 def create_access_token(information:dict) -> str:
     secret_key = service_config_from_nacos["token"]["secret_key"]
@@ -15,7 +16,7 @@ def verify_access_token(token:str) -> dict:
     try:
       information =  jwt.decode(token,secret_key,algorithms=algorithm)
       if information is None:
-         raise ValueError("Invalid token!")
+         raise AuthException(code=403,msg="Invalid token")
       return information
     except InvalidTokenError:
-       raise ValueError("Invalid token!")
+       raise AuthException(code=403,msg="Invalid token")

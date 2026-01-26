@@ -1,4 +1,4 @@
-from nacos.nacos_life import lifespan,service_config_from_nacos
+from nacos.nacos_life import lifespan,service_config_from_nacos,service_match
 from fastapi import FastAPI
 from exceptions.register import register_global_exception
 

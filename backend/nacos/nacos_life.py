@@ -8,12 +8,12 @@ from utils.redisUtils import RedisClient
 
 service_config = {}
 service_config_from_nacos = {}
-
+nacos_client : Nacosclient | None = None
 redis_client : RedisClient | None = None
 
 @asynccontextmanager
 async def lifespan(app:FastAPI,service_name:str):
-    global service_config,service_config_from_nacos,redis_client
+    global service_config,service_config_from_nacos,redis_client,nacos_client
     ## get local application yaml 
     nacosConfig =  load_local_config(service_name)
     ## put service into Nacos
@@ -41,3 +41,16 @@ async def listen_change(new_config:dict):
     service_config_from_nacos.update(new_config)
     await redis_client.refresh(service_config_from_nacos)
     print("Nacos config updated:", service_config_from_nacos)
+
+def service_match(path:str)->str | None:
+    #get service information from nacos
+    service_config = service_config_from_nacos["route"]
+    for service in service_config:
+        route_path = str(service["path"])
+        if route_path.endswith("*"):
+            prefix = route_path[:-1]
+            if path.startswith(prefix):
+                return service["service"]
+            if route_path == path:
+                return service["service"]
+    return None       

@@ -1,8 +1,10 @@
 from gateway.config.gateway_config import app,service_config_from_nacos
-from fastapi import Request
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from utils.config_load import path_match
+from ...utils.jwt_utils import verify_access_token
+from ...nacos.nacos_life import redis_client
+from ...exceptions.base_exception import AuthException
+
 
 class GatewayFilter(BaseHTTPMiddleware):
 
@@ -19,10 +21,19 @@ class GatewayFilter(BaseHTTPMiddleware):
             return await call_next(request)
         
         token = request.headers.get("Authorization")
+        if token and token.startswith("Bearer "):
+            token = token[7:]
+
         if not token:
-            return JSONResponse(
-                status_code=401,
-                content= {"msg":"Unauthorized"}
-            )
+            raise AuthException(code=401,msg="Unauthorized !")
+        information = verify_access_token(token)
+        if information is None:
+            raise AuthException(code=401,msg="Unauthorized !")
+        userInfo = redis_client.aget(information["uuid"])
+        if userInfo is None:
+            raise AuthException(code=401,msg="Unauthorized !")
         response = await call_next(request)
         return response
+
+
+app.add_middleware(GatewayFilter)
