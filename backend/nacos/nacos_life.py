@@ -1,6 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import asyncio
@@ -8,14 +5,15 @@ from nacos.nacos_client import Nacosclient
 from utils.config_load import load_local_config
 from utils.redisUtils import RedisClient
 
-redis_client = RedisClient()
 
 service_config = {}
 service_config_from_nacos = {}
 
+redis_client : RedisClient | None = None
+
 @asynccontextmanager
 async def lifespan(app:FastAPI,service_name:str):
-    global service_config,service_config_from_nacos
+    global service_config,service_config_from_nacos,redis_client
     ## get local application yaml 
     nacosConfig =  load_local_config(service_name)
     ## put service into Nacos
@@ -28,6 +26,8 @@ async def lifespan(app:FastAPI,service_name:str):
     # get application configuration information from Nacos
     init_conf = await nacos_client.get_config()
     service_config_from_nacos.update(init_conf)
+    # init redis information
+    redis_client = RedisClient(service_config_from_nacos)
     #start 
     asyncio.create_task(nacos_client.listen_config(listen_change))
     print("Gateway application started")
@@ -39,5 +39,5 @@ async def listen_change(new_config:dict):
     global service_config_from_nacos
     service_config_from_nacos.clear()
     service_config_from_nacos.update(new_config)
-    redis_client.refresh()
+    await redis_client.refresh(service_config_from_nacos)
     print("Nacos config updated:", service_config_from_nacos)

@@ -1,7 +1,4 @@
-import sys
-from config.gateway_config import app
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
+from .config.gateway_config import app
 from utils.config_load import load_local_config
 
 if __name__ == "__main__":
