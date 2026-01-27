@@ -3,7 +3,7 @@ from typing import Optional,Callable
 import yaml
 import asyncio
 import hashlib
-
+from exceptions.base_exception import BaseServiceException
 class Nacosclient:
 
     def __init__(self,config:dict):
@@ -21,19 +21,19 @@ class Nacosclient:
         self.password: Optional[str] = auth_conf.get("password")
 
 
-    async def register_service(self) -> dict :
+    async def register_service(self,service_config:dict) -> dict :
         auth = (self.username, self.password) if self.auth_enabled and self.username and self.password else None
         async with httpx.AsyncClient(auth=auth, timeout=10) as client:
             resp = await client.post(
                 f"http://{self.server_ip}:{self.server_port}/nacos/v1/ns/instance",
                 params={
                     "serviceName": self.service_name,
-                    "ip": self.server_ip,
-                    "port": self.server_port,
+                    "ip": service_config["ip"],
+                    "port": service_config["port"],
                     "namespaceId": self.namespace,
                     "weight": 1,
                     "healthy": True,
-                    "ephemeral": True
+                    "ephemeral": False
                 }
             )
             resp.raise_for_status()
@@ -70,15 +70,22 @@ class Nacosclient:
 
     async def get_instance(self,service_name:str) -> list[dict]:
         auth = (self.username, self.password) if self.auth_enabled and self.username and self.password else None
-        async with httpx.AsyncClient(auth=auth,timeout=10) as client:
-            resp = await client.get(
-                f"http://{self.server_ip}:{self.server_port}/nacos/v1/ns/instance/list",
+        try:
+            async with httpx.AsyncClient(auth=auth,timeout=10) as client:
+              resp = await client.get(
+                f"http://{self.server_ip}:{self.server_port}/nacos/v1/ns/instance",
                 params={
                     "serviceName":service_name,
                     "namespaceId":self.namespace
                 }
             )
-
             resp.raise_for_status()
             data = resp.json()
-            return data.get("hosts", [])                       
+            if not data or not data.get("ip"):
+                raise BaseServiceException(code=503, msg=f"No healthy instances for {service_name}")
+            return data
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise BaseServiceException(code=404,msg=f"{service_name} not found in Nacos!")
+        except httpx.RequestError as e:
+            raise BaseServiceException(code=500, msg=f"Request to Nacos failed: {e}")                        

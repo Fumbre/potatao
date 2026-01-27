@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import asyncio
 from nacos.nacos_client import Nacosclient
-from utils.config_load import load_local_config
+from utils.config_load import load_local_config,get_local_ip
 from utils.redisUtils import RedisClient
 
 
@@ -13,33 +13,36 @@ redis_client : RedisClient | None = None
 
 @asynccontextmanager
 async def lifespan(app:FastAPI,service_name:str):
-    global service_config,service_config_from_nacos,redis_client,nacos_client
+    global service_config,service_config_from_nacos,nacos_client
     ## get local application yaml 
     nacosConfig =  load_local_config(service_name)
-    ## put service into Nacos
-    nacos_client = Nacosclient(nacosConfig)
-    await nacos_client.register_service()
     # intialize service basic information 
     service_config["service_name"] = nacosConfig["app"]["name"]
-    service_config["ip"] = nacosConfig["server"]["host"]
+    service_config["ip"] = get_local_ip()
     service_config["port"] = nacosConfig["server"]["port"]
+    ## put service into Nacos
+    nacos_client = Nacosclient(nacosConfig)
+    await nacos_client.register_service(service_config)
     # get application configuration information from Nacos
     init_conf = await nacos_client.get_config()
     service_config_from_nacos.update(init_conf)
     # init redis information
-    redis_client = RedisClient(service_config_from_nacos)
+    if service_config_from_nacos.get("redis") is not None:
+        global redis_client
+        redis_client = RedisClient(service_config_from_nacos)
     #start 
     asyncio.create_task(nacos_client.listen_config(listen_change))
-    print("Gateway application started")
+    print(f"{service_name} application started")
     yield 
-    print("Gateway application closed")
+    print(f"{service_name} application closed")
 
 
 async def listen_change(new_config:dict):
     global service_config_from_nacos
     service_config_from_nacos.clear()
     service_config_from_nacos.update(new_config)
-    await redis_client.refresh(service_config_from_nacos)
+    if service_config_from_nacos.get("redis") is not None:
+        await redis_client.refresh(service_config_from_nacos)
     print("Nacos config updated:", service_config_from_nacos)
 
 def service_match(path:str)->str | None:

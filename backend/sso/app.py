@@ -1,0 +1,1 @@
+from sso.config.sso_confg import app

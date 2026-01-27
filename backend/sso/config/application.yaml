@@ -1,14 +1,14 @@
 app:
-  name: gateway
+ name: sso
 
 server:
-  port: 8080
+  port: 8081
 
 nacos:
   server_ip: localhost
   server_port: 8848
   namespace: e5389dad-2a20-49bc-8195-cd390145e58b
   group: DEFAULT_GROUP
-  data_id: patato-gateway.yaml
+  data_id: patato-sso.yaml
   auth:
     enabled: false
