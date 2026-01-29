@@ -4,6 +4,7 @@ import asyncio
 from nacos.nacos_client import Nacosclient
 from utils.config_load import load_local_config,get_local_ip
 from utils.redisUtils import RedisClient
+from database.database_config import init_db,SessionLocal
 
 
 service_config = {}
@@ -30,10 +31,15 @@ async def lifespan(app:FastAPI,service_name:str):
     if service_config_from_nacos.get("redis") is not None:
         global redis_client
         redis_client = RedisClient(service_config_from_nacos)
+    #init database
+    if service_config_from_nacos.get("database") is not None:
+        init_db(service_config_from_nacos["database"])
     #start 
     asyncio.create_task(nacos_client.listen_config(listen_change))
     print(f"{service_name} application started")
     yield 
+    if SessionLocal:
+        SessionLocal().bind.dispose()
     print(f"{service_name} application closed")
 
 
