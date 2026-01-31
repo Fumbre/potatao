@@ -11,5 +11,5 @@ snowflake-sqlalchemy
 pydantic
 phonenumbers
 snowflake-id
-passlib[bcrypt]
+passlib[argon2]
 pydantic[email]

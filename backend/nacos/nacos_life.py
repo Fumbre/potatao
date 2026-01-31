@@ -34,6 +34,7 @@ async def lifespan(app:FastAPI,service_name:str):
     if service_config_from_nacos.get("redis") is not None:
         global redis_client
         redis_client = RedisClient(service_config_from_nacos)
+        app.state.redis_client = redis_client
     #init database
     if service_config_from_nacos.get("database") is not None:
         init_db(service_config_from_nacos["database"])            
@@ -58,6 +59,7 @@ async def listen_change(new_config:dict):
     service_config_from_nacos.update(new_config)
     if service_config_from_nacos.get("redis") is not None:
         await redis_client.refresh(service_config_from_nacos)
+
     if service_config_from_nacos.get("database") is not None:
         if SessionLocal:
            init_db(service_config_from_nacos["database"])    

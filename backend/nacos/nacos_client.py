@@ -116,9 +116,9 @@ class Nacosclient:
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                if not data.get("hosts"):
+                if not data.get("data").get("hosts"):
                     raise BaseServiceException(code=503, msg=f"No healthy instances for {service_name}")
-                host = data["hosts"][0]
+                host = data["data"]["hosts"][0]
                 return {"ip": host["ip"], "port": host["port"]}
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:

@@ -180,7 +180,7 @@ class RedisClient:
     ) -> SyncBloom:
 
         return SyncBloom(
-            redis=self.sync,
+            redis_client=self.sync,
             key=key,
             capacity=capacity,
             error_rate=error_rate
@@ -195,7 +195,7 @@ class RedisClient:
     ) -> AsyncBloom:
 
         return AsyncBloom(
-            redis=self.async_,
+            redis_client=self.async_,
             key=key,
             capacity=capacity,
             error_rate=error_rate

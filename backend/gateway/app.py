@@ -8,7 +8,6 @@ async def router(full_path:str, request:Request):
     nacos_client = request.app.state.nacos_client
     path = "/" + full_path
     service_name = service_match(path=path)
-    print("-------------------------"+service_name)
     if service_name is None:
         raise BaseServiceException(code=502, msg="service not found")
     service_instance = await nacos_client.get_instance(service_name)
