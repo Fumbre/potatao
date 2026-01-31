@@ -4,7 +4,12 @@ httpx
 python-jose
 pyyaml
 redis
+pyfilters
 pyjwt
 sqlalchemy
 snowflake-sqlalchemy
 pydantic
+phonenumbers
+snowflake-id
+passlib[bcrypt]
+pydantic[email]

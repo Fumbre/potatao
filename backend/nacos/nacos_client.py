@@ -88,4 +88,27 @@ class Nacosclient:
             if e.response.status_code == 404:
                 raise BaseServiceException(code=404,msg=f"{service_name} not found in Nacos!")
         except httpx.RequestError as e:
-            raise BaseServiceException(code=500, msg=f"Request to Nacos failed: {e}")                        
+            raise BaseServiceException(code=500, msg=f"Request to Nacos failed: {e}")
+
+    async def deregister_service(self, service_config: dict) -> None:
+        auth = (self.username, self.password) if self.auth_enabled and self.username and self.password else None
+        try:
+            async with httpx.AsyncClient(auth=auth, timeout=10) as client:
+                resp = await client.delete(
+                    f"http://{self.server_ip}:{self.server_port}/nacos/v1/ns/instance",
+                    params={
+                        "serviceName": self.service_name,
+                        "ip": service_config["ip"],
+                        "port": service_config["port"],
+                        "namespaceId": self.namespace,
+                    }
+                )
+                resp.raise_for_status()
+                print(f"Service {self.service_name} at {service_config['ip']}:{service_config['port']} deregistered successfully")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                print(f"Service {self.service_name} not found in Nacos, already deregistered?")
+            else:
+                print(f"Failed to deregister service {self.service_name}: {e}")
+        except httpx.RequestError as e:
+            print(f"Request to Nacos failed during deregister: {e}")                            

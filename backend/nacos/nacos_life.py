@@ -5,6 +5,8 @@ from nacos.nacos_client import Nacosclient
 from utils.config_load import load_local_config,get_local_ip
 from utils.redisUtils import RedisClient
 from database.database_config import init_db,SessionLocal
+from utils.snowflake_id_util  import init_snowflake
+from nacos.nacos_event import config_ready_event
 
 
 service_config = {}
@@ -33,13 +35,19 @@ async def lifespan(app:FastAPI,service_name:str):
         redis_client = RedisClient(service_config_from_nacos)
     #init database
     if service_config_from_nacos.get("database") is not None:
-        init_db(service_config_from_nacos["database"])
-    #start 
+        init_db(service_config_from_nacos["database"])            
     asyncio.create_task(nacos_client.listen_config(listen_change))
+    #init snowflake Id
+    if service_config_from_nacos.get("snowflake") is not None:
+        init_snowflake(service_config_from_nacos)
+
+    config_ready_event.set()
+
     print(f"{service_name} application started")
     yield 
     if SessionLocal:
         SessionLocal().bind.dispose()
+    await nacos_client.deregister_service(service_config)    
     print(f"{service_name} application closed")
 
 
@@ -49,6 +57,9 @@ async def listen_change(new_config:dict):
     service_config_from_nacos.update(new_config)
     if service_config_from_nacos.get("redis") is not None:
         await redis_client.refresh(service_config_from_nacos)
+    if service_config_from_nacos.get("database") is not None:
+        if SessionLocal:
+           init_db(service_config_from_nacos["database"])    
     print("Nacos config updated:", service_config_from_nacos)
 
 def service_match(path:str)->str | None:
