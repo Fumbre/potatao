@@ -7,8 +7,9 @@ server:
 nacos:
   server_ip: localhost
   server_port: 8848
-  namespace: f30e57f3-64f5-40a9-9eae-3db86d3938ac
+  namespace: aa710a50-3c1e-4581-9107-11bd8a4502cd
   group: DEFAULT_GROUP
   data_id: patato-gateway.yaml
+  ephemeral: true
   auth:
     enabled: false

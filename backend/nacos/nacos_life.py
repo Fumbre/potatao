@@ -26,6 +26,7 @@ async def lifespan(app:FastAPI,service_name:str):
     ## put service into Nacos
     nacos_client = Nacosclient(nacosConfig)
     await nacos_client.register_service(service_config)
+    app.state.nacos_client = nacos_client
     # get application configuration information from Nacos
     init_conf = await nacos_client.get_config()
     service_config_from_nacos.update(init_conf)
