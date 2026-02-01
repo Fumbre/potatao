@@ -1,0 +1,32 @@
+[project]
+name = "backend-workspace"
+version = "0.1.0"
+description = "papato project"
+authors = [
+    {name = "Sunny01",email = "whs3296116638@outlook.com"}
+]
+requires-python = ">=3.10,<3.11"
+
+[tool.poetry.dependencies]
+fastapi = "0.128.0"
+uvicorn = { version = "0.40.0", extras = ["standard"] }
+httpx = "0.28.1"
+python-jose = "3.5.0"
+pyyaml = "6.0.3"
+redis = "7.1.0"
+pyfilters = "0.1.5"
+pyjwt = "2.11.0"
+sqlalchemy = "2.0.46"
+snowflake-sqlalchemy = "1.8.2"
+pydantic = { version = "2.12.5", extras = ["email"] }
+phonenumbers = "9.0.22"
+snowflake-id = "1.0.2"
+passlib = { version = "1.7.4", extras = ["argon2"] }
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
