@@ -1,13 +1,13 @@
 import jwt
 from jwt import InvalidTokenError
 from nacos.nacos_life import service_config_from_nacos
-from ..exceptions.base_exception import AuthException
+from exceptions.base_exception import AuthException
 
 def create_access_token(information:dict) -> str:
     secret_key = service_config_from_nacos["token"]["secret_key"]
     algorithm = service_config_from_nacos["token"]["algorithm"]
     token = jwt.encode(information,secret_key,algorithm)
-    return token
+    return "Bearer " + token
 
 
 def verify_access_token(token:str) -> dict:

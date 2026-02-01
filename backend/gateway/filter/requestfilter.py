@@ -29,7 +29,7 @@ class GatewayFilter(BaseHTTPMiddleware):
         information = verify_access_token(token)
         if information is None:
             raise AuthException(code=401,msg="Unauthorized !")
-        userInfo = redis_client.aget(information["uuid"])
+        userInfo = redis_client.get(f"user:{information['uuid']}")
         if userInfo is None:
             raise AuthException(code=401,msg="Unauthorized !")
         response = await call_next(request)

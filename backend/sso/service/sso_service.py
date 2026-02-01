@@ -1,13 +1,15 @@
 from sqlalchemy.orm import Session
-from sso.requestbody.sso_request_body import RegisterUser
+from sso.requestbody.sso_request_body import RegisterUser,LoginUser
 from fastapi.responses import JSONResponse
-from model.sso_model import SysUser,select
+from model.sso_model import SysUser,select,or_
 from exceptions.base_exception import BaseServiceException
-from utils.redisUtils import RedisClient
+from utils.redisUtils import RedisClient,TimeUnit
 from utils.snowflake_id_util import get_snowflake_id
-from utils.encryption_util import hash
-from nacos.nacos_life import SessionLocal
+from utils.encryption_util import hash,verify
+from nacos.nacos_life import service_config_from_nacos
 from fastapi import Request
+from utils.jwt_utils import create_access_token
+import json
 
 def user_register(db:Session,request:Request,user:RegisterUser)->JSONResponse:
     redis_client: RedisClient = getattr(request.app.state, "redis_client", None)
@@ -55,11 +57,33 @@ def user_register(db:Session,request:Request,user:RegisterUser)->JSONResponse:
         db.close()
 
 
+def user_login(user:LoginUser,request:Request,db:Session) ->JSONResponse:
+    redis_client: RedisClient = getattr(request.app.state, "redis_client", None)
+    if not redis_client.bloom_exists("bf:sso:username",user.account) and not redis_client.bloom_exists("bf:sso:email",user.account):
+        raise BaseServiceException(code=500,msg="current account is not exist!")
+    # find current user in database
+    sysUser = db.scalar(select(SysUser).where(or_(
+        SysUser.username == user.account,
+        SysUser.email == user.account
+    )))
+    # check password
+    if not verify(user.password,sysUser.password):
+        raise BaseServiceException(code=500,msg="Incorrect account or password!")
+    #generate token
+    uuid = get_snowflake_id()
+    info = {
+        "uuid":uuid
+    }
+    sysUser.password = ""
+    token = create_access_token(info)
+    # put user information into redis
+    redis_client.set(f"user:{uuid}",json.dumps(sysUser.to_dict()),service_config_from_nacos["token"]["expire_time"],TimeUnit.MINUTE)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "code":200,
+            "token":token,
+            "msg":"login successfully!"
+        }
+    )
 
-def selectUserList()->list[SysUser]:
-    db = SessionLocal()
-    try:
-        user_list =  db.scalars(select(SysUser).where(SysUser.status == '1')).all()
-        return user_list
-    finally:
-        db.close()

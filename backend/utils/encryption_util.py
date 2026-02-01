@@ -1,5 +1,4 @@
 from passlib.context import CryptContext
-import hashlib
 
 generator = CryptContext(schemes=["argon2"], deprecated="auto")
 

@@ -1,4 +1,4 @@
-from sqlalchemy import VARCHAR,CHAR,select,func
+from sqlalchemy import VARCHAR,CHAR,select,or_
 from sqlalchemy.orm import Mapped,mapped_column
 from model.base_model import Base
 
