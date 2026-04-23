@@ -1,5 +1,9 @@
 # potatao phone
 
+## FRESH START
+git submodule update --init --recursive
+
+
 Mic, speaker, sd card
 
 ## start

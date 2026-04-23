@@ -1,0 +1,11 @@
+[submodule "micropython"]
+    path = potatao_phone/micropython
+    url = https://github.com/micropython/micropython.git
+
+[submodule "pico-sdk"]
+    path = potatao_phone/pico-sdk
+    url = https://github.com/raspberrypi/pico-sdk.git
+
+[submodule "pico-extras"]
+    path = potatao_phone/pico-extras
+    url = https://github.com/raspberrypi/pico-extras.git
