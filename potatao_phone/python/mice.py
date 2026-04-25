@@ -2,51 +2,51 @@ from machine import I2S, Pin
 import time
 import struct
 
-# --- Настройки пинов (подправь под свои, если отличаются) ---
+
+# -- PINS --
 SCK_PIN = 26   # Serial Clock (BCLK)
 WS_PIN = 27    # Word Select (LRCK)
-SD_PIN = 28    # Serial Data (OUT с микрофона)
+SD_PIN = 28    # Serial Data (OUT)
 
-# --- Инициализация микрофона ---
-mic = I2S(
+# -- I2S initialization protocol --
+micProtocol = I2S(
     0, 
     sck=Pin(SCK_PIN), 
     ws=Pin(WS_PIN), 
     sd=Pin(SD_PIN),
-    mode=I2S.RX,           # Режим ПРИЕМА
-    bits=32,               # INMP441 выдает данные в 32-битных слотах
-    format=I2S.MONO,       # Берем один канал
-    rate=16000,            # Частота дискретизации (16кГц за глаза для тестов)
-    ibuf=1024              # Внутренний буфер
+    mode=I2S.RX,           # moude Sygnal Receiver
+    bits=32,               # INMP441 gives data in 32-bit buckets
+    format=I2S.MONO,       # mono format
+    rate=16000,            # Sampling frequency (16kHz is more than enough for tests) "
+    ibuf=1024              # nternal buffer
 )
 
-# Создаем буфер для чтения (на 256 сэмплов)
-# 256 сэмплов * 4 байта (32 бита) = 1024 байта
+# Create a buffer for reading:
+# 256 samples * 4 byte (32 bits) = 1024 byte
 buf = bytearray(1024)
 
-print("Начинаю слушать эфир... Жми Ctrl+C для стопа")
+print("Start reading from Mic")
 
 try:
     while True:
-        # Читаем данные из I2S в буфер
-        num_read = mic.readinto(buf)
+        # Read data from I2S into buffer
+        num_read = micProtocol.readinto(buf)
         
-        # Разбираем буфер по 4 байта (32-битные целые числа)
-        # 'i' означает signed int (32 бита)
-        # Мы читаем порциями по 4 байта из того, что реально пришло
+        # convert DataIN from buffer using 4 byte (32-bit number)
         for i in range(0, num_read, 4):
-            # Распаковываем 4 байта в число
+            # Unpuck 4 byte into number
             sample = struct.unpack('<i', buf[i:i+4])[0]
             
-            # Тонкий момент: INMP441 — 24-битный. 
-            # Часто данные приходят сдвинутыми. Делаем сдвиг, чтобы нормировать звук:
-            sample >>= 8
+            # INMP441 — 24-bit.
+            # often data comes shifted.
+            sample >>= 8 # normolize sound
             
-            # Выплевываем в Serial Monitor
+            # Put to serial
             print(sample)
             
 except KeyboardInterrupt:
-    print("Стопэ!")
+    print("Stop reading from Mic!")
 finally:
+    # good
     mic.deinit()
-    print("Микрофон отключен.")
+    print("Mic is unpuged")
