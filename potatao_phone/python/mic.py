@@ -48,5 +48,5 @@ except KeyboardInterrupt:
     print("Stop reading from Mic!")
 finally:
     # good
-    mic.deinit()
+    micProtocol.deinit()
     print("Mic is unpuged")
