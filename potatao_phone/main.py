@@ -6,14 +6,14 @@ import socket
 def setup():
     global mic, wifi
     mic = Mic(0,16,17,18, 14)
-    wifi = Wifi('Cumpose', '')
+    wifi = Wifi('Cumpose', '4835PjX7q8558')
 
 setup()
 
 wifi.connect()
 
 # Setup UDP Socket
-server_ip = "192.168.1.175" # Your computer's IP
+server_ip = "192.168.1.53" # Your computer's IP
 server_port = 5005
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 

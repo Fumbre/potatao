@@ -11,13 +11,13 @@ target_include_directories(usermod_sdcard INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
+
 # required libraries
 target_link_libraries(usermod_sdcard INTERFACE
     usermod
     pico_stdlib
     hardware_spi
     hardware_gpio
-    pico_stdlib_cpp
 )
 
 # C++17

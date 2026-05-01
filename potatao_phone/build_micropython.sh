@@ -4,7 +4,9 @@ set -e
 echo "Building MicroPython for RPI_PICO2_W..."
 
 SDK_PATH=$(realpath pico-sdk)
-MODULE_PATHS="$(realpath modules/hello/micropython.cmake)"
+SDCARD_MODULE="$(realpath modules/sdcard/micropython.cmake)"
+HELLO_MODULE="$(realpath modules/hello/micropython.cmake)"
+MODULE_PATHS="${HELLO_MODULE};${SDCARD_MODULE}"
 
 cd micropython/ports/rp2
 
