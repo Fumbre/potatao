@@ -4,6 +4,13 @@ The full reperesentation of all strucre and code that we need for potatao phone 
 
 ## Potatao_phone
 
+### Programms requirements
+
+- cmake
+- arm-none-eabi (arm-none-eabi-gcc arm-none-eabi-newlib)
+- uv (curl -LsSf https://astral.sh/uv/install.sh | sh)
+
+
 The hardware part of potatao device 
 includes hardware connectection & code implementation
 
