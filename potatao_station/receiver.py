@@ -4,7 +4,7 @@ import struct
 
 # --- CONFIGURATION ---
 # Use "0.0.0.0" to listen on all available network interfaces
-UDP_IP = "0.0.0.0" 
+UDP_IP = "10.42.0.1" 
 UDP_PORT = 5005
 OUTPUT_FILENAME = "recorded_audio.wav"
 

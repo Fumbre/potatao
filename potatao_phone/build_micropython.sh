@@ -47,7 +47,7 @@ make -j$(nproc) -C build
 # Copy firmware to project root build folder
 cd ../../..
 mkdir -p build
-cp $(find micropython/ports/rp2/build -name "firmware.uf2") build/firmware.uf2
+cp $(find micropython/ports/rp2/build -name "firmware.uf2") build/micropython_potatao.uf2
 
 echo "✅ Done! Firmware is at:"
-echo "   $(realpath build/firmware.uf2)"
+echo "   $(realpath build/micropython_potatao.uf2)"
