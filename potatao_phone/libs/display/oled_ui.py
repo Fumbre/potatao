@@ -7,7 +7,7 @@
 #   3.3V -> VCC
 #   GND  -> GND
 
-from machine import Pin, I2C
+from machine import Pin, SoftI2C
 from libs.display import ssd1306
 import time
 
@@ -29,7 +29,7 @@ class OledUI:
                  conflicts with the I2S microphone on bus 0.
     """
 
-    def __init__(self, sda_pin=2, scl_pin=3, i2c_id=1, freq=400_000):
+    def __init__(self, sda_pin=2, scl_pin=3, freq=50_000):
         """
         @name        __init__
         @authors     Francisco
@@ -43,8 +43,7 @@ class OledUI:
         @param       freq      I2C clock frequency in Hz (default: 400000)
         """
         # Set up the I2C bus with the given pins and frequency
-        i2c = I2C(i2c_id, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=freq)
-
+        i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin), freq=freq)
         # Scan the bus for connected devices
         devices = i2c.scan()
         if not devices:
@@ -55,17 +54,17 @@ class OledUI:
 
         # Create the SSD1306 driver instance
         self.oled = ssd1306.SSD1306_I2C(WIDTH, HEIGHT, i2c, addr=addr)
-        self.clear()
+        self.oled.write_cmd(0xA1)
+        self.oled.write_cmd(0xC8)
+        self.oled.fill(1)
+        self.oled.show()
+        self.oled.fill(1)
+        self.oled.show()
 
     def clear(self):
-        """
-        @name        clear
-        @authors     Francisco
-        @date        07-05-2026
-        @details     Fills the entire screen with black and pushes the
-                     buffer to the physical display.
-        """
-        self.oled.fill(0)
+        for y in range(HEIGHT):
+            for x in range(WIDTH):
+                self.oled.pixel(x, y, 1)
         self.oled.show()
 
     def show(self):
