@@ -36,7 +36,7 @@ typedef struct _sdcard_obj_t{
  */
 static void sdcard_pio_init(sdcard_obj_t *self, uint baudrate){
     // load pio
-    self->offset = pio_add_program_at_offset(self->pio, &sdcard_program);
+    self->offset = (uint)pio_can_add_program(self->pio, &sdcard_program);
     //init state machine
     self->sm = pio_claim_unused_sm(self->pio,true);
     //get configuration from pio
@@ -185,7 +185,7 @@ static void init_sdcard(sdcard_obj_t *self){
  * @param kw_number argument value number
  * @param args argment value
  */
-static mp_obj_t sdcard_make_new(const mp_obj_empty_type_t *type, size_t args_number, size_t kw_number, const mp_obj_t *args){
+static mp_obj_t sdcard_make_new(const mp_obj_type_t *type, size_t args_number, size_t kw_number, const mp_obj_t *args){
     //check the argument number
     mp_arg_check_num(args_number,kw_number,6,6,false);
     //create object RAM address
@@ -203,6 +203,8 @@ static mp_obj_t sdcard_make_new(const mp_obj_empty_type_t *type, size_t args_num
     mp_hal_pin_high(self->cs);
     //init pins
     sdcard_pio_init(self,baudrate);
+    // init sdcard
+    init_sdcard(self);
     //return micropython object
     return MP_OBJ_FROM_PTR(self);
 }
@@ -252,3 +254,18 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new,sdcard_make_new,
     locals_dict, &sdcard_dict
 );
+
+static const mp_rom_map_elem_t sdcard_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_sdcard) },
+    { MP_ROM_QSTR(MP_QSTR_SDCard),   MP_ROM_PTR(&sdcard_type) },
+};
+static MP_DEFINE_CONST_DICT(sdcard_module_globals, sdcard_module_globals_table);
+
+// 4. Define the actual Module object
+const mp_obj_module_t sdcard_user_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t *)&sdcard_module_globals,
+};
+
+// 5. THE KEY: Register the module so "import sdcard" works
+MP_REGISTER_MODULE(MP_QSTR_sdcard, sdcard_user_module);
