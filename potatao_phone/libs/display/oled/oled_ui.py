@@ -8,7 +8,7 @@
 #   GND  -> GND
 
 from machine import Pin, SoftI2C
-from libs.display import sh1106
+from libs.display.oled import sh1106
 import time
 
 # Display resolution constants
