@@ -4,6 +4,8 @@ import struct
 import time
 
 class Mic:
+    GAIN = 14
+
     def __init__(self, i2s_id: int, sck_pin: int, ws_pin: int, sd_pin: int, btn_trigger_pin):
         self.mic_I2S: I2S = I2S(
             i2s_id, 
@@ -47,13 +49,15 @@ class Mic:
                 for i in range(0, num_read, 4):
                     # Unpack 32-bit
                     sample = struct.unpack('<i', self.mv[i:i+4])[0]
-                    sample >>= 8 # 24-bit
+                    sample >>= 16 # 24-bit
                     
                     # Convert to 16-bit (CD Quality) for the network
                     # This cuts your Wi-Fi traffic in half!
                     # sample_16 = max(min(sample >> 8, 32767), -32768)
 
-                    sample_16 = max(min(sample >> 4, 32767), -32768)
+                    sample *= self.GAIN
+
+                    sample_16 = max(min(sample, 32767), -32768)
                     struct.pack_into('<h', out_buf, (i // 2), sample_16)
                 
                 # 2. Send the WHOLE buffer at once (1024 bytes)
