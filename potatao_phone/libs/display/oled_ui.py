@@ -29,7 +29,7 @@ class OledUI:
                  conflicts with the I2S microphone on bus 0.
     """
 
-    def __init__(self, sda_pin=2, scl_pin=3, freq=50_000):
+    def __init__(self, sda_pin=10, scl_pin=11, freq=50_000):
         """
         @name        __init__
         @authors     Francisco
