@@ -8,7 +8,7 @@
 #   GND  -> GND
 
 from machine import Pin, SoftI2C
-from libs.display import ssd1306
+from libs.display import sh1106
 import time
 
 # Display resolution constants
@@ -53,13 +53,8 @@ class OledUI:
         print(f"OLED found at I2C address: 0x{addr:02X}")
 
         # Create the SSD1306 driver instance
-        self.oled = ssd1306.SSD1306_I2C(WIDTH, HEIGHT, i2c, addr=addr)
-        self.oled.write_cmd(0xA1)
-        self.oled.write_cmd(0xC8)
-        self.oled.fill(1)
-        self.oled.show()
-        self.oled.fill(1)
-        self.oled.show()
+        self.oled = sh1106.SH1106_I2C(WIDTH, HEIGHT, i2c, addr=addr)
+        self.clear()
 
     def clear(self):
         for y in range(HEIGHT):
