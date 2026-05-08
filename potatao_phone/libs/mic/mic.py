@@ -49,14 +49,11 @@ class Mic:
                 for i in range(0, num_read, 4):
                     # Unpack 32-bit
                     sample = struct.unpack('<i', self.mv[i:i+4])[0]
-                    sample >>= 16 # 24-bit
+                    sample >>= 16 # the best sample without any noise
                     
-                    # Convert to 16-bit (CD Quality) for the network
+                    sample *= self.GAIN # make the sample louder
+
                     # This cuts your Wi-Fi traffic in half!
-                    # sample_16 = max(min(sample >> 8, 32767), -32768)
-
-                    sample *= self.GAIN
-
                     sample_16 = max(min(sample, 32767), -32768)
                     struct.pack_into('<h', out_buf, (i // 2), sample_16)
                 
