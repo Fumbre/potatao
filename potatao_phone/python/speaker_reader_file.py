@@ -1,5 +1,14 @@
-from machine import I2S, Pin
+from machine import I2S, Pin, SPI
 import os
+import ssdcard
+
+
+# SD setup
+spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+sd = ssdcard.SDCard(spi, Pin(13))
+vfs = os.VfsFat(sd)
+os.mount(vfs, "/sd")
+
 
 # Setup speaker
 speaker = I2S(
@@ -17,7 +26,7 @@ speaker = I2S(
 print("Playing dogbark...")
 
 buf = bytearray(1024)
-with open('dogbark.wav', 'rb') as f:
+with open('/sd/test_record.wav', 'rb') as f:
     f.seek(44)  # skip WAV header (44 bytes standard)
     while True:
         num_read = f.readinto(buf)
@@ -27,3 +36,4 @@ with open('dogbark.wav', 'rb') as f:
 
 print("Done!")
 speaker.deinit()
+os.umount("/sd")
