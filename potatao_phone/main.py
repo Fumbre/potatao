@@ -13,13 +13,11 @@ WIFI_PASSWORD = config.get("WIFI_PASSWORD", "")
 
 def setup():
     global mic, wifi, ui
-    mic = Mic(0,16,17,18, 14)
+    mic = Mic(0, 16, 17, 18, 22)
     wifi = Wifi(SSID, WIFI_PASSWORD)
     ui = OledUI(sda_pin=10, scl_pin=11)
 
 setup()
-
-
 
 wifi.connect()
 
@@ -37,5 +35,6 @@ try:
             ui.oled.show()
             utime.sleep(0.05)
         mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
+        utime.sleep(0.05)
 finally:
     mic.deinit()
