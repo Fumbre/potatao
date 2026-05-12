@@ -29,13 +29,13 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
 
     while True:
-        if mic.is_recording:
+        if not mic.is_recording:
+      
+            ui.oled.fill(0)
+            ui.oled.text("Recorded", 0, 0, 1)
+            ui.oled.show()
+            utime.sleep(0.05)
+        else :
             mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
-            # ui.oled.fill(0)
-            # ui.oled.text("Recorded", 0, 0, 1)
-            # ui.oled.show()
-        
-        utime.sleep(0.05)
-
 finally:
     mic.deinit()
