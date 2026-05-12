@@ -25,7 +25,6 @@ fi
 # ─────────────────────────────────────────
 # MODULES — add your own custom module to micropython build
 SDK_PATH=$(realpath pico-sdk)
-SDCARD_MODULE="$(realpath modules/sdcard/micropython.cmake)"
 HELLO_MODULE="$(realpath modules/hello/micropython.cmake)"
 SQLITE_MODULE="$(realpath modules/sqlite/micropython.cmake)"
 
@@ -41,7 +40,6 @@ cmake -S . -B build \
     -DBOARD="$BOARD_NAME" \
     -DMICROPY_BOARD="$BOARD_NAME" \
     -DPICO_SDK_PATH="$SDK_PATH" \
-    -DUSER_C_MODULES="$MODULES_PATHS"
 
 make -j$(nproc) -C build
 
