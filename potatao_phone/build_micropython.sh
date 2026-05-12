@@ -40,7 +40,6 @@ cmake -S . -B build \
     -DBOARD="$BOARD_NAME" \
     -DMICROPY_BOARD="$BOARD_NAME" \
     -DPICO_SDK_PATH="$SDK_PATH" \
-    -DUSER_C_MODULES="$MODULES_PATHS"
 
 make -j$(nproc) -C build
 
