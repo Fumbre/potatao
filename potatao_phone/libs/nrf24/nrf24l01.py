@@ -188,16 +188,30 @@ class NRF24L01:
         self.reg_write(EN_RXADDR, self.reg_read(EN_RXADDR) | (1 << pipe_id))
 
     def start_listening(self):
-        self.reg_write(CONFIG, self.reg_read(CONFIG) | PWR_UP | PRIM_RX)
+
+        self.ce(0)
+
+        # Power up in RX mode
+        self.reg_write(
+            CONFIG,
+            self.reg_read(CONFIG) | PWR_UP | PRIM_RX
+        )
+
+        # Clear interrupts
         self.reg_write(STATUS, RX_DR | TX_DS | MAX_RT)
 
+        # Restore pipe0 address
         if self.pipe0_read_addr is not None:
             self.reg_write_bytes(RX_ADDR_P0, self.pipe0_read_addr)
 
+        # Flush FIFOs
         self.flush_rx()
         self.flush_tx()
+
+        # Start listening
         self.ce(1)
-        utime.sleep_us(130)
+
+        utime.sleep_us(150)
 
     def stop_listening(self):
         self.ce(0)
@@ -209,13 +223,21 @@ class NRF24L01:
         return not bool(self.reg_read(FIFO_STATUS) & RX_EMPTY)
 
     def recv(self):
-        # get the data
+
+        # Read payload
         self.cs(0)
+
         self.spi.readinto(self.buf, R_RX_PAYLOAD)
+
         buf = self.spi.read(self.payload_size)
+
         self.cs(1)
-        # clear RX ready flag
+
+        # Clear RX_DR interrupt flag
         self.reg_write(STATUS, RX_DR)
+
+        # Keep radio in RX mode
+        self.ce(1)
 
         return buf
 
