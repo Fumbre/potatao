@@ -15,7 +15,7 @@ ce = Pin(17, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=1000000,   # MUCH more stable
+    baudrate=250000,   # MUCH more stable
     polarity=0,
     phase=0,
     sck=Pin(6),
