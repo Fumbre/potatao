@@ -27,8 +27,9 @@ fi
 SDK_PATH=$(realpath pico-sdk)
 SDCARD_MODULE="$(realpath modules/sdcard/micropython.cmake)"
 HELLO_MODULE="$(realpath modules/hello/micropython.cmake)"
+SQLITE_MODULE="$(realpath modules/sqlite/micropython.cmake)"
 
-MODULES_PATHS="${HELLO_MODULE};${SDCARD_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SDCARD_MODULE};${SQLITE_MODULE}"
 # ─────────────────────────────────────────
 
 # Remove previous build

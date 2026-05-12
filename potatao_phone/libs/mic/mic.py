@@ -4,6 +4,8 @@ import struct
 import time
 
 class Mic:
+    GAIN = 14
+
     def __init__(self, i2s_id: int, sck_pin: int, ws_pin: int, sd_pin: int, btn_trigger_pin):
         self.mic_I2S: I2S = I2S(
             i2s_id, 
@@ -39,17 +41,6 @@ class Mic:
         if self.is_recording:
             num_read = self.mic_I2S.readinto(self.buf)
             if num_read > 0:
-                # # Unpuck 4 byte into number
-                # # Process the data 
-                # for i in range(0, num_read, 4):
-                #     # Direct slice from memoryview is faster
-                #     sample = struct.unpack('<i', self.mv[i:i+4])[0]
-
-                #     # INMP441 — 24-bit.
-                #     # often data comes shifted.
-                #     sample >>= 8 # normolize sound
-                    
-                #     print(sample)
 
                 # 1. We create a smaller buffer to hold 16-bit packed data 
                 # (Sending 32-bit over Wi-Fi is a waste of bandwidth)
@@ -58,11 +49,12 @@ class Mic:
                 for i in range(0, num_read, 4):
                     # Unpack 32-bit
                     sample = struct.unpack('<i', self.mv[i:i+4])[0]
-                    sample >>= 8 # 24-bit
+                    sample >>= 16 # the best sample without any noise
                     
-                    # Convert to 16-bit (CD Quality) for the network
+                    sample *= self.GAIN # make the sample louder
+
                     # This cuts your Wi-Fi traffic in half!
-                    sample_16 = max(min(sample >> 8, 32767), -32768)
+                    sample_16 = max(min(sample, 32767), -32768)
                     struct.pack_into('<h', out_buf, (i // 2), sample_16)
                 
                 # 2. Send the WHOLE buffer at once (1024 bytes)
