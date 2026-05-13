@@ -9,6 +9,7 @@ requires-python = ">=3.14"
 dependencies = [
     "sqlalchemy",
     "boto3",
+    "boto3-stubs[s3]",
     "PyJWT",
     "cryptography"
 ]
