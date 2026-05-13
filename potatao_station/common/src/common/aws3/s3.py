@@ -85,7 +85,7 @@ class S3Util:
     
     
     @classmethod
-    def complete_session(cls,session_id:str):
+    def complete_session(cls,session_id:str)->str:
         session = cls._active_sessions[session_id]
         if session:
             if len(session["Buffer"]) > 0:
@@ -114,4 +114,5 @@ class S3Util:
                     Bucket=session["Bucket"],
                     Key=session["Key"],
                     UploadId=session["UploadId"]
-                )                        
+                )
+        return session["Key"]                                    
