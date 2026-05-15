@@ -29,8 +29,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
 
     while True:
-        if mic.is_recording:
-            mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
+        mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
             # if test:
                 # test = False
                 # ui.oled.fill(0)

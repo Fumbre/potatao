@@ -27,8 +27,9 @@ fi
 SDK_PATH=$(realpath pico-sdk)
 HELLO_MODULE="$(realpath modules/hello/micropython.cmake)"
 SQLITE_MODULE="$(realpath modules/sqlite/micropython.cmake)"
+MIC_DSP_MODULE="$(realpath modules/mic_dsp/micropython.cmake)"
 
-MODULES_PATHS="${HELLO_MODULE};${SDCARD_MODULE};${SQLITE_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SDCARD_MODULE};${SQLITE_MODULE};${MIC_DSP_MODULE}"
 # ─────────────────────────────────────────
 
 # Remove previous build
@@ -40,6 +41,7 @@ cmake -S . -B build \
     -DBOARD="$BOARD_NAME" \
     -DMICROPY_BOARD="$BOARD_NAME" \
     -DPICO_SDK_PATH="$SDK_PATH" \
+    -DUSER_C_MODULES="$MODULES_PATHS"
 
 make -j$(nproc) -C build
 
