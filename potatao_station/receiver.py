@@ -3,7 +3,7 @@ import wave
 import struct
 import time
 
-UDP_IP = "10.42.0.54"
+UDP_IP = "10.42.0.1"
 UDP_PORT = 5005
 OUTPUT_FILENAME = "recorded_audio.wav"
 SAMPLE_RATE = 16000
