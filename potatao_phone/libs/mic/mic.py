@@ -16,7 +16,7 @@ class Mic:
             bits=32,
             format=I2S.MONO,
             rate=16000,
-            ibuf=8192
+            ibuf=8192 #  8192 | 12288
         )
         self.buf = bytearray(2048)
         self.mv = memoryview(self.buf)
@@ -39,34 +39,6 @@ class Mic:
             self.record_start_ms = time.ticks_ms()  # reset timestamp
         else:
             self.is_recording = False
-
-    # def process(self, sock, server_ip, server_port):
-    #     if self.is_recording:
-    #         num_read = self.mic_I2S.readinto(self.buf)
-    #         if num_read > 0:
-    #             # convert 32-bit to 16-bit
-    #             audio_buf = bytearray(num_read // 2)
-    #             for i in range(0, num_read, 4):
-    #                 sample = struct.unpack('<i', self.mv[i:i+4])[0]
-    #                 sample >>= 16
-    #                 sample *= self.GAIN
-    #                 sample_16 = max(min(sample, 32767), -32768)
-    #                 struct.pack_into('<h', audio_buf, (i // 2), sample_16)
-
-    #             # build packet: [seq_num 4B][timestamp_ms 4B][audio data]
-    #             timestamp_ms = time.ticks_diff(
-    #                 time.ticks_ms(), self.record_start_ms
-    #             )
-    #             header = struct.pack('<II', self.seq_num, timestamp_ms)
-    #             packet = header + audio_buf
-
-    #             try:
-    #                 sock.sendto(packet, (server_ip, server_port))
-    #                 self.seq_num += 1
-    #             except:
-    #                 pass
-    #     else:
-    #         time.sleep(0.05)
 
     def process(self, sock, server_ip, server_port):
         if self.is_recording:

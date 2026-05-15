@@ -31,11 +31,13 @@ try:
     while True:
         if mic.is_recording:
             mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
-            # ui.oled.fill(0)
-            # ui.oled.text("Recorded", 0, 0, 1)
-            # ui.oled.show()
+            # if test:
+                # test = False
+                # ui.oled.fill(0)
+                # ui.oled.text("Recorded", 0, 0, 1)
+                # ui.oled.show()
         
-        utime.sleep(0.05)
+        # utime.sleep(0.05)
 
 finally:
     mic.deinit()
