@@ -46,7 +46,9 @@ select_arm_toolchain() {
         fi
     fi
 
-    for gcc in /Applications/ArmGNUToolchain/*/arm-none-eabi/bin/arm-none-eabi-gcc; do
+    for gcc in \
+        "$SCRIPT_DIR"/../.toolchains/*/bin/arm-none-eabi-gcc \
+        /Applications/ArmGNUToolchain/*/arm-none-eabi/bin/arm-none-eabi-gcc; do
         [ -x "$gcc" ] || continue
         if toolchain_has_runtime "$gcc"; then
             export PATH="$(dirname "$gcc"):$PATH"
@@ -100,8 +102,9 @@ fi
 SDK_PATH="$(abs_path "$SCRIPT_DIR/pico-sdk")"
 HELLO_MODULE="$(abs_path "$SCRIPT_DIR/modules/hello/micropython.cmake")"
 SQLITE_MODULE="$(abs_path "$SCRIPT_DIR/modules/sqlite/micropython.cmake")"
+SDCARD_MODULE="$(abs_path "$SCRIPT_DIR/modules/sdcard/micropython.cmake")"
 
-MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE}"
 # ─────────────────────────────────────────
 
 RP2_DIR="$SCRIPT_DIR/micropython/ports/rp2"

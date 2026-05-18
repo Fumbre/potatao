@@ -26,9 +26,9 @@ fi
 SDK_PATH=$(get_abspath "pico-sdk")
 HELLO_MODULE=$(get_abspath "modules/hello/micropython.cmake")
 SQLITE_MODULE=$(get_abspath "modules/sqlite/micropython.cmake")
+SDCARD_MODULE=$(get_abspath "modules/sdcard/micropython.cmake")
 
-# Note: SDCARD_MODULE wasn't defined in your snippet, ensure it's set if needed
-MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE}"
 # ─────────────────────────────────────────
 
 # Navigate to port directory
