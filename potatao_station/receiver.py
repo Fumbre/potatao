@@ -1,47 +1,93 @@
 import socket
 import wave
 import struct
+import time
 
-# --- CONFIGURATION ---
-# Use "0.0.0.0" to listen on all available network interfaces
-UDP_IP = "10.42.0.1" 
+UDP_IP = "192.168.1.47"  # Match your updated IP
 UDP_PORT = 5005
 OUTPUT_FILENAME = "recorded_audio.wav"
+SAMPLE_RATE = 24000      # Updated to 24kHz
 
-# Setup the socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
+sock.settimeout(3.0)  # Stop after 3 seconds of silence
 
-print(f"Listening for audio on port {UDP_PORT}...")
-print("Press Ctrl+C to stop recording and save the file.")
+print(f"Listening on port {UDP_PORT} at {SAMPLE_RATE}Hz...")
+print("Awaiting incoming stream from Pico...")
 
-audio_frames = []
+audio_chunks = {}   # seq_num -> audio_bytes
+expected_seq = 0
+lost_packets = 0
+detected_chunk_samples = None
 
 try:
     while True:
-        # Receive a chunk of data (matches the 1024-byte chunks from Pico)
-        data, addr = sock.recvfrom(2048) 
-        audio_frames.append(data)
-        
-        # Simple progress indicator
-        if len(audio_frames) % 20 == 0:
-            print(f"Received {len(audio_frames)} packets...", end="\r")
+        try:
+            data, addr = sock.recvfrom(2048)
+        except socket.timeout:
+            print("\nSilence detected — stopping recording")
+            break
+
+        if len(data) < 8:
+            continue
+
+        # Unpack the 8-byte header (Sequence Number, Timestamp)
+        seq_num, timestamp_ms = struct.unpack('<II', data[:8])
+        audio_data = data[8:]
+
+        # Dynamically learn the chunk size from the first valid packet
+        if detected_chunk_samples is None and len(audio_data) > 0:
+            # 2 bytes per sample for 16-bit PCM audio
+            detected_chunk_samples = len(audio_data) // 2
+            print(f"ℹ️ Auto-detected payload: {len(audio_data)} bytes ({detected_chunk_samples} samples) per packet.")
+
+        audio_chunks[seq_num] = audio_data
+
+        # Track lost packets
+        if seq_num > expected_seq:
+            lost = seq_num - expected_seq
+            lost_packets += lost
+            print(f"⚠️  Lost {lost} packet(s) at seq {expected_seq}-{seq_num-1}")
+
+        expected_seq = seq_num + 1
+
+        if len(audio_chunks) % 20 == 0:
+            print(f"Received {len(audio_chunks)} packets, lost {lost_packets}...", end="\r")
 
 except KeyboardInterrupt:
-    print("\nStopping... Saving to WAV.")
+    print("\nStopped manually")
 
 finally:
-    # --- SAVE TO WAV FILE ---
-    # We combine all chunks into one big byte string
-    all_audio = b"".join(audio_frames)
-    
-    with wave.open(OUTPUT_FILENAME, 'wb') as wav_file:
-        # Params: (nchannels, sampwidth, framerate, nframes, comptype, compname)
-        # 1 channel (Mono), 2 bytes per sample (16-bit), 16000Hz
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(2) 
-        wav_file.setframerate(8000)
-        wav_file.writeframes(all_audio)
+    print(f"\nTotal received: {len(audio_chunks)} packets")
+    print(f"Total lost:     {lost_packets} packets")
 
-    print(f"Saved: {OUTPUT_FILENAME}")
+    if audio_chunks and detected_chunk_samples:
+        max_seq = max(audio_chunks.keys())
+        
+        # Match silence size perfectly to the detected audio chunks
+        silence = bytearray(detected_chunk_samples * 2)  
+
+        all_audio = bytearray()
+        for i in range(max_seq + 1):
+            if i in audio_chunks:
+                all_audio += audio_chunks[i]
+            else:
+                all_audio += silence  # Fill gap with silence
+
+        # Save to WAV with accurate headers
+        with wave.open(OUTPUT_FILENAME, 'wb') as wav:
+            wav.setnchannels(1)      # Mono
+            wav.setsampwidth(2)      # 16-bit (2 bytes)
+            wav.setframerate(SAMPLE_RATE)
+            wav.writeframes(all_audio)
+
+        # Calculate exact duration based on dynamic chunk sizes
+        chunk_duration_ms = (detected_chunk_samples / SAMPLE_RATE) * 1000
+        total_duration_s = ((max_seq + 1) * chunk_duration_ms) / 1000
+
+        print(f"✅ Saved: {OUTPUT_FILENAME}")
+        print(f"   Final Duration: ~{total_duration_s:.2f}s")
+    else:
+        print("❌ No audio data received.")
+
     sock.close()

@@ -1,11 +1,11 @@
 from machine import SPI, Pin, I2S
 import os
-import ssdcard
+import sdcard
 import struct
 
 # SD setup
 spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-sd = ssdcard.SDCard(spi, Pin(13))
+sd = sdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 

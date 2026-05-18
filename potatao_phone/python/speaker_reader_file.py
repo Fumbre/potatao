@@ -1,10 +1,11 @@
 from machine import I2S, Pin, SPI
 import os
-import ssdcard
+import sdcard
 
-# 1. SD setup - 20МГц это предел для большинства карт, если будет шуметь - снизь до 15_000_000
-spi = SPI(1, baudrate=15_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-sd = ssdcard.SDCard(spi, Pin(13))
+
+# SD setup
+spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+sd = sdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 

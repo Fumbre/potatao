@@ -1,70 +1,69 @@
-
 from machine import I2S, Pin
 import struct
 import time
+import mic_dsp  # our C module
 
 class Mic:
-    GAIN = 14
+    GAIN = 12 # sound loudenest
 
-    def __init__(self, i2s_id: int, sck_pin: int, ws_pin: int, sd_pin: int, btn_trigger_pin):
-        self.mic_I2S: I2S = I2S(
-            i2s_id, 
-            sck=Pin(sck_pin), 
-            ws=Pin(ws_pin), 
+    def __init__(self, i2s_id, sck_pin, ws_pin, sd_pin, btn_trigger_pin):
+        self.mic_I2S = I2S(
+            i2s_id,
+            sck=Pin(sck_pin),
+            ws=Pin(ws_pin),
             sd=Pin(sd_pin),
-            mode=I2S.RX,           # moude Sygnal Receiver
-            bits=32,               # INMP441 gives data in 32-bit buckets
-            format=I2S.MONO,       # mono format
-            rate=8000,            # Sampling frequency (16kHz is more than enough for tests) "
-            ibuf=2048              # internal buffer
+            mode=I2S.RX,
+            bits=32,
+            format=I2S.MONO,
+            rate=24000,
+            ibuf=8192
+        )
+        self.buf     = bytearray(2048)
+        self.mv      = memoryview(self.buf)
+        self.out_buf = bytearray(1024)  # preallocated, no GC pressure
+        self.is_recording    = False
+        self.seq_num         = 0
+        self.record_start_ms = 0
+
+        self.button = Pin(btn_trigger_pin, Pin.IN, Pin.PULL_UP)
+        self.button.irq(
+            trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING,
+            handler=self._handle_button
         )
 
-        self.buf = bytearray(1024)
-        self.mv = memoryview(self.buf) # Use memoryview to avoid RAM garbage
-        self.is_recording = False
-        
-        # Set up the button
-        self.button = Pin(btn_trigger_pin, Pin.IN, Pin.PULL_UP)
-        
-        # IRQ Handlers: Only change the flag, NO PRINTING or READING here
-        self.button.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._handle_button)
-
     def _handle_button(self, pin):
-        # If button is 0 (pressed), start. If 1 (released), stop.
         if pin.value() == 0:
-            self.is_recording = True
+            self.is_recording    = True
+            self.seq_num         = 0
+            self.record_start_ms = time.ticks_ms()
         else:
             self.is_recording = False
 
     def process(self, sock, server_ip, server_port):
-        """Call this in your main loop"""
         if self.is_recording:
             num_read = self.mic_I2S.readinto(self.buf)
             if num_read > 0:
+                # C does the whole conversion in microseconds
+                bytes_written = mic_dsp.convert(
+                    self.mv[:num_read],
+                    self.out_buf,
+                    self.GAIN
+                )
 
-                # 1. We create a smaller buffer to hold 16-bit packed data 
-                # (Sending 32-bit over Wi-Fi is a waste of bandwidth)
-                out_buf = bytearray(num_read // 2) 
-                
-                for i in range(0, num_read, 4):
-                    # Unpack 32-bit
-                    sample = struct.unpack('<i', self.mv[i:i+4])[0]
-                    sample >>= 16 # the best sample without any noise
-                    
-                    sample *= self.GAIN # make the sample louder
+                timestamp_ms = time.ticks_diff(
+                    time.ticks_ms(), self.record_start_ms
+                )
+                header = struct.pack('<II', self.seq_num, timestamp_ms)
 
-                    # This cuts your Wi-Fi traffic in half!
-                    sample_16 = max(min(sample, 32767), -32768)
-                    struct.pack_into('<h', out_buf, (i // 2), sample_16)
-                
-                # 2. Send the WHOLE buffer at once (1024 bytes)
-                # NEVER send one sample at a time. Send chunks!
                 try:
-                    sock.sendto(out_buf, (server_ip, server_port))
+                    sock.sendto(
+                        header + self.out_buf[:bytes_written],
+                        (server_ip, server_port)
+                    )
+                    self.seq_num += 1
                 except:
                     pass
         else:
-            # If not recording, we give the CPU a tiny rest
             time.sleep(0.05)
 
     def deinit(self):

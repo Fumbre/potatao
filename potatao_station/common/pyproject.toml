@@ -8,7 +8,12 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "sqlalchemy",
-    "psycopg[binary]"
+    "boto3",
+    "boto3-stubs[s3]",
+    "PyJWT",
+    "cryptography",
+    "pysqlite3-binary",
+    "redis"
 ]
 
 [build-system]
