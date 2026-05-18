@@ -22,13 +22,13 @@ else
 fi
 
 # ─────────────────────────────────────────
-# MODULES — Using the portable path function
-SDK_PATH=$(get_abspath "pico-sdk")
-HELLO_MODULE=$(get_abspath "modules/hello/micropython.cmake")
-SQLITE_MODULE=$(get_abspath "modules/sqlite/micropython.cmake")
+# MODULES — add your own custom module to micropython build
+SDK_PATH=$(realpath pico-sdk)
+HELLO_MODULE="$(realpath modules/hello/micropython.cmake)"
+SQLITE_MODULE="$(realpath modules/sqlite/micropython.cmake)"
+MIC_DSP_MODULE="$(realpath modules/mic_dsp/micropython.cmake)"
 
-# Note: SDCARD_MODULE wasn't defined in your snippet, ensure it's set if needed
-MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SDCARD_MODULE};${SQLITE_MODULE};${MIC_DSP_MODULE}"
 # ─────────────────────────────────────────
 
 # Navigate to port directory

@@ -52,3 +52,4 @@ class Wifi:
         self.wlan.disconnect()
         self.wlan.active(False)
         print("Disconnected")
+        
