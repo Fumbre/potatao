@@ -2,32 +2,31 @@ from machine import I2S, Pin, SPI
 import os
 import ssdcard
 
-
-# SD setup
-spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+# 1. SD setup - 20МГц это предел для большинства карт, если будет шуметь - снизь до 15_000_000
+spi = SPI(1, baudrate=15_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
 sd = ssdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-
-# Setup speaker
+# 2. Setup speaker
 speaker = I2S(
     0,
-    sck=Pin(2),   # BCLK
-    ws=Pin(3),    # LRCK  
-    sd=Pin(4),    # DIN to amplifier
+    sck=Pin(2),   
+    ws=Pin(3),    
+    sd=Pin(4),    
     mode=I2S.TX,
     bits=16,
     format=I2S.MONO,
     rate=44100,
-    ibuf=4096
+    ibuf=32768  # УВЕЛИЧЕНО: 32КБ буфера спасут от треска и падения качества
 )
 
-print("Playing dogbark...")
+print("Playing LID.wav...")
 
-buf = bytearray(1024)
-with open('/sd/test_record.wav', 'rb') as f:
-    f.seek(44)  # skip WAV header (44 bytes standard)
+# 3. Читаем кусками побольше
+buf = bytearray(512) # УВЕЛИЧЕНО: так Pico реже дергает карту
+with open('/sd/LID.wav', 'rb') as f:
+    f.seek(44) 
     while True:
         num_read = f.readinto(buf)
         if num_read == 0:

@@ -15,8 +15,8 @@ mic = I2S(0,
     mode=I2S.RX,
     bits=32,
     format=I2S.MONO,
-    rate=8000,
-    ibuf=4096      # bigger buffer = more tolerance for Python slowness
+    rate=16000,
+    ibuf=4096     # bigger buffer = more tolerance for Python slowness
 )
 
 print("Recording 3 seconds...")
@@ -27,7 +27,7 @@ out_buf = bytearray(512)  # 16-bit output is half the size
 
 GAIN = 6
 total_bytes = 0
-target_bytes = 8000 * 2 * 6  # 3 seconds of 16-bit mono at 8000Hz
+target_bytes = 16000 * 2 * 6  # 3 seconds of 16-bit mono at 8000Hz
 
 with open("/sd/test_record.wav", "wb") as f:
     # write placeholder WAV header — we'll fix it after
