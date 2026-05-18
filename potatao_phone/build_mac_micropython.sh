@@ -103,8 +103,9 @@ SDK_PATH="$(abs_path "$SCRIPT_DIR/pico-sdk")"
 HELLO_MODULE="$(abs_path "$SCRIPT_DIR/modules/hello/micropython.cmake")"
 SQLITE_MODULE="$(abs_path "$SCRIPT_DIR/modules/sqlite/micropython.cmake")"
 SDCARD_MODULE="$(abs_path "$SCRIPT_DIR/modules/sdcard/micropython.cmake")"
+MIC_DSP_MODULE="$(abs_path "$SCRIPT_DIR/modules/mic_dsp/micropython.cmake")"
 
-MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE}"
+MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};"
 # ─────────────────────────────────────────
 
 RP2_DIR="$SCRIPT_DIR/micropython/ports/rp2"
