@@ -29,14 +29,11 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
 
     while True:
-<<<<<<< HEAD
-=======
         if not mic.is_recording:
             ui.oled.fill(0)
             ui.oled.text(f"Lang: {language_settings.get_language()}", 0, 0, 1)
             ui.oled.show()
             utime.sleep(0.05)
->>>>>>> 1de40ee (add: lang and vol)
         mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
             # if test:
                 # test = False

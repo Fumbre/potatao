@@ -19,8 +19,8 @@ def test_sdcard():
 
     print("Initializing SD card...")
     try:
-        import ssdcard as ssdcard
-        sd = ssdcard.SDCard(spi, Pin(SDCARD_PIN_CS))  # ← just 2 args
+        import sdcard
+        sd = sdcard.SDCard(spi, Pin(SDCARD_PIN_CS))
         print("✅ SD card detected!")
     except Exception as e:
         print("❌ SD card init failed:", e)
