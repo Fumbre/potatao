@@ -12,7 +12,8 @@ dependencies = [
     "boto3-stubs[s3]",
     "PyJWT",
     "cryptography",
-    "pysqlite3-binary"
+    "pysqlite3-binary",
+    "redis"
 ]
 
 [build-system]
