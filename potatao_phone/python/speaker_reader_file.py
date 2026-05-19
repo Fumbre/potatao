@@ -9,25 +9,25 @@ sd = sdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-# 2. Setup speaker
+
+# Setup speaker
 speaker = I2S(
     0,
-    sck=Pin(2),   
-    ws=Pin(3),    
-    sd=Pin(4),    
+    sck=Pin(2),   # BCLK
+    ws=Pin(3),    # LRCK  
+    sd=Pin(4),    # DIN to amplifier
     mode=I2S.TX,
     bits=16,
     format=I2S.MONO,
     rate=44100,
-    ibuf=32768  # УВЕЛИЧЕНО: 32КБ буфера спасут от треска и падения качества
+    ibuf=4096
 )
 
-print("Playing LID.wav...")
+print("Playing dogbark...")
 
-# 3. Читаем кусками побольше
-buf = bytearray(512) # УВЕЛИЧЕНО: так Pico реже дергает карту
-with open('/sd/LID.wav', 'rb') as f:
-    f.seek(44) 
+buf = bytearray(1024)
+with open('/sd/test_record.wav', 'rb') as f:
+    f.seek(44)  # skip WAV header (44 bytes standard)
     while True:
         num_read = f.readinto(buf)
         if num_read == 0:
