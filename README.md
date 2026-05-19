@@ -11,6 +11,12 @@ The full reperesentation of all strucre and code that we need for potatao phone 
 - uv (curl -LsSf https://astral.sh/uv/install.sh | sh)
 
 
+# MacOS
+- brew install coreutils
+brew tap armmbed/formulae
+brew install arm-none-eabi-gcc cmake
+
+
 The hardware part of potatao device 
 includes hardware connectection & code implementation
 

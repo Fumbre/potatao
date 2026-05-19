@@ -4,7 +4,7 @@ import socket
 import time
 import os
 from machine import SPI, Pin
-import ssdcard
+import sdcard
 from libs.conf.env import load_env
 
 config = load_env()
@@ -25,7 +25,7 @@ FILE_PATH = "/sd/test_record.wav"
 
 # --- SD INITIALIZATION ---
 spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-sd = ssdcard.SDCard(spi, Pin(13))
+sd = sdcard.SDCard(spi, Pin(13))
 os.mount(os.VfsFat(sd), "/sd")
 
 # --- UDP SETUP ---

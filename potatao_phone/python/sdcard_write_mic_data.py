@@ -1,11 +1,11 @@
 from machine import SPI, Pin, I2S
 import os
-import ssdcard
+import sdcard
 import struct
 
 # SD setup
 spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-sd = ssdcard.SDCard(spi, Pin(13))
+sd = sdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
@@ -15,8 +15,8 @@ mic = I2S(0,
     mode=I2S.RX,
     bits=32,
     format=I2S.MONO,
-    rate=8000,
-    ibuf=4096      # bigger buffer = more tolerance for Python slowness
+    rate=16000,
+    ibuf=4096     # bigger buffer = more tolerance for Python slowness
 )
 
 print("Recording 3 seconds...")
@@ -27,7 +27,7 @@ out_buf = bytearray(512)  # 16-bit output is half the size
 
 GAIN = 6
 total_bytes = 0
-target_bytes = 8000 * 2 * 6  # 3 seconds of 16-bit mono at 8000Hz
+target_bytes = 16000 * 2 * 6  # 3 seconds of 16-bit mono at 8000Hz
 
 with open("/sd/test_record.wav", "wb") as f:
     # write placeholder WAV header — we'll fix it after
