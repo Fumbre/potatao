@@ -2,8 +2,8 @@ from machine import Pin, SPI
 from libs.nrf24.nrf24l01 import NRF24L01
 import utime
 
-csn = Pin(14, Pin.OUT, value=1)
-ce = Pin(17, Pin.OUT, value=0)
+csn = Pin(5, Pin.OUT, value=1)
+ce = Pin(1, Pin.OUT, value=0)
 
 spi = SPI(
     0,
@@ -12,7 +12,7 @@ spi = SPI(
     phase=0,
     sck=Pin(6),
     mosi=Pin(7),
-    miso=Pin(4)
+    miso=Pin(0)
 )
 
 nrf = NRF24L01(

@@ -6,22 +6,19 @@ import utime
 # PINS
 # -----------------------------
 
-csn = Pin(14, Pin.OUT, value=1)
-ce = Pin(17, Pin.OUT, value=0)
-
-# -----------------------------
-# SPI
-# -----------------------------
+csn = Pin(5, Pin.OUT, value=1)
+ce = Pin(1, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=250000,   # MUCH more stable
+    baudrate=1000000,
     polarity=0,
     phase=0,
     sck=Pin(6),
     mosi=Pin(7),
-    miso=Pin(4)
+    miso=Pin(0)
 )
+
 
 # -----------------------------
 # NRF24
