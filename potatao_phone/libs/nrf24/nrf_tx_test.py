@@ -63,4 +63,4 @@ while True:
     counter += 1
 
     # IMPORTANT
-    utime.sleep_ms(500)
+    utime.sleep_ms(1)

@@ -41,4 +41,4 @@ while True:
 
         print("Received:", msg)
 
-    utime.sleep_ms(10)
+    utime.sleep_ms(1)
