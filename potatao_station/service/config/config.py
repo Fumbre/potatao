@@ -3,7 +3,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings,SettingsConfigDict
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class DBSettings(BaseModel):
@@ -16,7 +16,7 @@ class RedisSettings(BaseModel):
     port:int = 6379
     db:int = 0
     password:str = "123456"
-    max_connection = 10
+    max_connection:int = 10
 
 
 class AWS3Settings(BaseModel):
