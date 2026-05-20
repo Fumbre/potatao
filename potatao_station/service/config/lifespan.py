@@ -7,6 +7,8 @@ from common.encrptytion.jwt.jwttoken import TokenUitl
 from common.encrptytion.aes.aes import AESUtil
 from common.encrptytion.x25519.x25519 import X25519MUtil
 from service.config.config import settings
+
+
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     ## init db

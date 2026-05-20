@@ -1,3 +1,4 @@
+from pathlib import Path
 from threading import Lock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker,session,DeclarativeBase
@@ -13,7 +14,8 @@ class DB:
         if cls._engine is None:
             with cls._lock:
                 if cls._engine is None:
-                    db_url = f"sqlite+pysqlcipher://:{password}@/{path}"
+                    abs_path = Path(path).resolve()
+                    db_url = f"sqlite+pysqlcipher://:{password}@/{abs_path}"
                     cls._engine = create_engine(
                         url=db_url,
                         echo=False,
