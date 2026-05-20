@@ -63,6 +63,22 @@ choose_output_dir() {
         printf '%s\n' "$fallback"
     fi
 }
+append_cflags_extra() {
+    local flag="$1"
+    case " ${CFLAGS_EXTRA:-} " in
+        *" $flag "*) ;;
+        *)
+            CFLAGS_EXTRA="${CFLAGS_EXTRA:+$CFLAGS_EXTRA }$flag"
+            export CFLAGS_EXTRA
+            ;;
+    esac
+}
+append_supported_cflags_extra() {
+    local flag="$1"
+    if printf 'int main(void) { return 0; }\n' | arm-none-eabi-gcc "$flag" -x c -c -o /dev/null - >/dev/null 2>&1; then
+        append_cflags_extra "$flag"
+    fi
+}
 
 # ─────────────────────────────────────────
 # CONFIGURATION — change this to switch boards
@@ -112,6 +128,10 @@ BUILD_DIR="$OUTPUT_DIR/micropython-rp2-$BOARD_MODEL"
 OUTPUT_UF2="$OUTPUT_DIR/micropython_potatao.uf2"
 
 select_arm_toolchain
+# GCC 15 reports false positives in vendored C sources with -Werror.
+append_supported_cflags_extra "-Wno-error=stringop-overflow"
+append_supported_cflags_extra "-Wno-error=maybe-uninitialized"
+append_supported_cflags_extra "-Wno-error=stringop-overread"
 rm -rf "$BUILD_DIR"
 
 cmake -S "$RP2_DIR" -B "$BUILD_DIR" \
