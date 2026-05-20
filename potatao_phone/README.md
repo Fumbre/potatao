@@ -29,7 +29,7 @@ os.mount(os.VfsFat(sd), "/sd")
 
 ## debugging mode
 
-mention: Raspberry pi debug probe just only debug your cutomized C code which is in your customized micropython.ut2.
+mention: Raspberry pi debug probe just only debug your cutomized C code which is customized micropython.ut2.
 
 tips: if you want to test your customized C code. Firstly you need upload your testing python code to pico, and use proba to debug. Because openOCD will occupies your serial port, you can't open micropython terminal at the same time
 
@@ -37,6 +37,7 @@ tips: if you want to test your customized C code. Firstly you need upload your t
 
    sudo pacman -S arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-binutils cmake make libusb
    sudo pacman -S git autoconf automake libtool libusb pkg-config make gcc
+   sudo pacman -S jimtcl pkgconf
 
 2. compile Raspberry pi openOCD
    
@@ -44,7 +45,7 @@ tips: if you want to test your customized C code. Firstly you need upload your t
 
    (2) ./bootstrap
 
-   (3) ./configure --enable-cmsis-dap
+   (3) ./configure --enable-cmsis-dap or ./configure --disable-werror
 
    (4) make -j$(nproc)
 
