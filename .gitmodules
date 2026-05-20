@@ -13,6 +13,7 @@
 [submodule "potatao_phone/modules/sqlite"]
 	path = potatao_phone/modules/sqlite
 	url = https://github.com/spatialdude/usqlite.git
+    
 [submodule "potatao_phone/tools/openocd"]
 	path = potatao_phone/tools/openocd
 	url = https://github.com/raspberrypi/openocd.git
