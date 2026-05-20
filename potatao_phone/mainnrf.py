@@ -1,9 +1,6 @@
 from libs.mic.mic import Mic
 from libs.nrf24.nrf_tx_test import send_sound_sample
-from libs.wifi.wifi import Wifi
 from libs.conf.env import load_env
-from libs.display.oled.oled_ui import OledUI
-from libs.display.ui.components.language.Language_settings import LanguageSettings  
 import socket
 import utime
 
