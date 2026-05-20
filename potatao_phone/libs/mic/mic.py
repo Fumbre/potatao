@@ -39,7 +39,8 @@ class Mic:
         else:
             self.is_recording = False
 
-    def process(self, sock, server_ip, server_port):
+    #def process(self, sock, server_ip, server_port):
+    def process(self):
         if self.is_recording:
             num_read = self.mic_I2S.readinto(self.buf)
             if num_read > 0:
@@ -55,14 +56,16 @@ class Mic:
                 )
                 header = struct.pack('<II', self.seq_num, timestamp_ms)
 
-                try:
-                    sock.sendto(
-                        header + self.out_buf[:bytes_written],
-                        (server_ip, server_port)
-                    )
-                    self.seq_num += 1
-                except:
-                    pass
+                self.seq_num += 1
+                return header + self.out_buf[:bytes_written]
+                # try:
+                #     sock.sendto(
+                #         header + self.out_buf[:bytes_written],
+                #         (server_ip, server_port)
+                #     )
+                #     self.seq_num += 1
+                # except:
+                #     pass
         else:
             time.sleep(0.05)
 

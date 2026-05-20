@@ -1,10 +1,10 @@
 # potatao phone
 
 ## FRESH START
-git submodule update --init --recursivesudo pacman -S arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-binutils cmake make libusb
+git submodule update --init --recursive sudo pacman -S arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-binutils cmake make libusb
 
 ## Build
-./build_build_micropython
+./build_micropython.sh
 
 ## Files that should be on Pico
 
