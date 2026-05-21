@@ -3,6 +3,7 @@ from libs.wifi.wifi import Wifi
 from libs.conf.env import load_env
 from libs.display.oled.oled_ui import OledUI
 from libs.display.ui.components.language.Language_settings import LanguageSettings  
+from libs.display.ui.events.btn_record import RecordButton
 import socket
 import utime
 
@@ -12,11 +13,12 @@ SSID = config.get("SSID", "")
 WIFI_PASSWORD = config.get("WIFI_PASSWORD", "")
 
 def setup():
-    global mic, wifi, ui, language_settings
+    global mic, wifi, ui, language_settings, rec_btn
     mic = Mic(0, 16, 17, 18, 22)
     wifi = Wifi(SSID, WIFI_PASSWORD)
     ui = OledUI(sda_pin = 10, scl_pin = 11)
     language_settings = LanguageSettings()
+    rec_btn = RecordButton(mic)
 
 setup()
 wifi.connect()
@@ -34,7 +36,7 @@ try:
             ui.oled.text(f"Lang: {language_settings.get_language()}", 0, 0, 1)
             ui.oled.show()
             utime.sleep(0.05)
-        mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
+            mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
             # if test:
                 # test = False
                 # ui.oled.fill(0)
