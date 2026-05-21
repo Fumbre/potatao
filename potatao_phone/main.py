@@ -52,10 +52,11 @@ try:
             # detect edge on A
             if a.value() == 0:
                 print("LEFT ⟲")
-                
-            if b.value() == 1:
-                print("RIGHT ⟳")
+            if b.value() == 0:
+                print("RIGHT ->")
+            # if 
 
+            
 
                 
         # if ui_state == 'wifi_room':
