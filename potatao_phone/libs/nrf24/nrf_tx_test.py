@@ -40,27 +40,45 @@ counter = 0
 
 print("Transmitter started")
 
-while True:
-
-    msg = "Hello {:03}".format(counter)
+def send_sound_sample(sample):
+    msg = sample
 
     try:
-
-        print("Sending:", msg)
+        print("Sending", msg)
 
         nrf.send(msg.encode())
 
         print("SUCCESS")
-
+    
     except Exception as e:
-
         print("FAILED:", e)
-
-        # Recover radio
         nrf.flush_tx()
         nrf.flush_rx()
-
-    counter += 1
-
-    # IMPORTANT
+        
     utime.sleep_ms(1)
+    
+# while True:
+
+#     msg = "Hello {:03}".format(counter)
+
+#     try:
+
+#         print("Sending:", msg)
+
+#         nrf.send(msg.encode())
+
+#         print("SUCCESS")
+
+#     except Exception as e:
+
+#         print("FAILED:", e)
+
+#         # Recover radio
+#         nrf.flush_tx()
+#         nrf.flush_rx()
+
+#     counter += 1
+
+#     # IMPORTANT
+#     utime.sleep_ms(1)
+

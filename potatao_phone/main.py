@@ -53,7 +53,7 @@ try:
             if a.value() == 0:
                 print("LEFT ⟲")
                 
-            if b.value() == 0:
+            if b.value() == 1:
                 print("RIGHT ⟳")
 
 

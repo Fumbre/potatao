@@ -11,8 +11,6 @@ from machine import Pin, SoftI2C
 from libs.display.oled import sh1106
 import time
 
-from import 
-
 # Screen width in pixels
 WIDTH  = 128
 
