@@ -1,25 +1,20 @@
 from libs.mic.mic import Mic
-from libs.wifi.wifi import Wifi
+from libs.nrf24.nrf_tx_test import send_sound_sample
 from libs.conf.env import load_env
-from libs.display.oled.oled_ui import OledUI
-from libs.display.ui.components.language.Language_settings import LanguageSettings  
 import socket
 import utime
 
 
 config = load_env()
-SSID = config.get("SSID", "")
-WIFI_PASSWORD = config.get("WIFI_PASSWORD", "")
 
 def setup():
     global mic, wifi, ui, language_settings
     mic = Mic(0, 16, 17, 18, 22)
-    wifi = Wifi(SSID, WIFI_PASSWORD)
-    ui = OledUI(sda_pin = 10, scl_pin = 11)
-    language_settings = LanguageSettings()
+
+    
 
 setup()
-wifi.connect()
+
 
 # Setup UDP Socket
 server_ip = config.get("SERVER_IP", "") # Your computer's IP
@@ -30,11 +25,9 @@ try:
 
     while True:
         if not mic.is_recording:
-            ui.oled.fill(0)
-            ui.oled.text(f"Lang: {language_settings.get_language()}", 0, 0, 1)
-            ui.oled.show()
-            utime.sleep(0.05)
-        mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
+            continue
+        sample = mic.process()
+        send_sound_sample(sample)
             # if test:
                 # test = False
                 # ui.oled.fill(0)

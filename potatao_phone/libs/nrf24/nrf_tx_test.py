@@ -6,22 +6,19 @@ import utime
 # PINS
 # -----------------------------
 
-csn = Pin(14, Pin.OUT, value=1)
-ce = Pin(17, Pin.OUT, value=0)
-
-# -----------------------------
-# SPI
-# -----------------------------
+csn = Pin(5, Pin.OUT, value=1)
+ce = Pin(1, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=250000,   # MUCH more stable
+    baudrate=1000000,
     polarity=0,
     phase=0,
     sck=Pin(6),
     mosi=Pin(7),
-    miso=Pin(4)
+    miso=Pin(0)
 )
+
 
 # -----------------------------
 # NRF24
@@ -43,27 +40,45 @@ counter = 0
 
 print("Transmitter started")
 
-while True:
-
-    msg = "Hello {:03}".format(counter)
+def send_sound_sample(sample):
+    msg = sample
 
     try:
-
-        print("Sending:", msg)
+        print("Sending", msg)
 
         nrf.send(msg.encode())
 
         print("SUCCESS")
-
+    
     except Exception as e:
-
         print("FAILED:", e)
-
-        # Recover radio
         nrf.flush_tx()
         nrf.flush_rx()
+        
+    utime.sleep_ms(1)
+    
+# while True:
 
-    counter += 1
+#     msg = "Hello {:03}".format(counter)
 
-    # IMPORTANT
-    utime.sleep_ms(500)
+#     try:
+
+#         print("Sending:", msg)
+
+#         nrf.send(msg.encode())
+
+#         print("SUCCESS")
+
+#     except Exception as e:
+
+#         print("FAILED:", e)
+
+#         # Recover radio
+#         nrf.flush_tx()
+#         nrf.flush_rx()
+
+#     counter += 1
+
+#     # IMPORTANT
+#     utime.sleep_ms(1)
+

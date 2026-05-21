@@ -3,7 +3,7 @@ import wave
 import struct
 import time
 
-UDP_IP = "192.168.1.47"  # Match your updated IP
+UDP_IP = "10.42.0.1"  # Match your updated IP
 UDP_PORT = 5005
 OUTPUT_FILENAME = "recorded_audio.wav"
 SAMPLE_RATE = 24000      # Updated to 24kHz
