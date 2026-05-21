@@ -11,6 +11,8 @@ from machine import Pin, SoftI2C
 from libs.display.oled import sh1106
 import time
 
+from import 
+
 # Screen width in pixels
 WIDTH  = 128
 
@@ -332,4 +334,9 @@ class OledUI:
 
         # Pushes everything to the screen
         self.oled.show()
+    
+    def draw_screen(self, ui_view):
+        if ui_view == 'wifi_room':
+            print('cool')
+            
 
