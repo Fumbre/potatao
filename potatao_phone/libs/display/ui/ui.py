@@ -16,7 +16,7 @@ ZONE_BOTTOM_H  = 10
 class UI:
     def __init__(self, sda_pin=PIN_OLED_SDA, scl_pin=PIN_OLED_SCL, freq=400_000):
         # use hardware I2C not SoftI2C — faster, less CPU
-        i2c = I2C(0, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=freq)
+        i2c = I2C(1, sda=Pin(sda_pin), scl=Pin(scl_pin), freq=freq)
         devices = i2c.scan()
         if not devices:
             raise RuntimeError("No I2C device found. Check wiring!")

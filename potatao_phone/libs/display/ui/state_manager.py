@@ -108,7 +108,8 @@ class StateManager:
         elif screen == "ROOM_VIEW":
             cursor = self.cursor()
             if cursor == 0:    # Record
-                self.start_recording()
+                print('we are in recording room')
+                # self.start_recording()
             elif cursor == 1:  # Files
                 self.push("FILE_LIST", self.current_context())
                 self.reset_cursor()
