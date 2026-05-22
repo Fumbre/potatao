@@ -1,8 +1,9 @@
 from libs.mic.mic import Mic
 from libs.wifi.wifi import Wifi
 from libs.conf.env import load_env
-from libs.display.oled.oled_ui import OledUI
+from potatao_phone.libs.display.ui.ui import UI
 from libs.display.ui.components.language.Language_settings import LanguageSettings  
+from libs.display.ui.events.btn_record import RecordButton
 import socket
 import utime
 
@@ -14,11 +15,12 @@ SSID = config.get("SSID", "")
 WIFI_PASSWORD = config.get("WIFI_PASSWORD", "")
 
 def setup():
-    global mic, wifi, ui, language_settings
-    mic = Mic(0, 16, 17, 18, 22)
+    global mic, wifi, ui, language_settings, btn_rec
+    mic = Mic(0, 16, 17, 18)
     wifi = Wifi(SSID, WIFI_PASSWORD)
-    ui = OledUI(sda_pin = 10, scl_pin = 11)
+    ui = UI()
     language_settings = LanguageSettings()
+    btn_rec = RecordButton(mic)
 
 setup()
 wifi.connect()
@@ -41,7 +43,7 @@ try:
 
     while True:
 
-        if not mic.is_recording:
+        if not btn_rec.pressed:
             utime.sleep(0.05)
 
             if ui_state != last_ui_state:
@@ -49,11 +51,13 @@ try:
                 # ui.oled.show()
                 last_ui_state = ui_state
 
-            # detect edge on A
+            # detect edge on A (this is a test code for encoder)
             if a.value() == 0:
                 print("LEFT ⟲")
+                ui.make_white()
             if b.value() == 0:
                 print("RIGHT ->")
+                ui.make_black()
             # if 
 
             

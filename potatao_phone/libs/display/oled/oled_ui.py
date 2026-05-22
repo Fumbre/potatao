@@ -333,8 +333,3 @@ class OledUI:
         # Pushes everything to the screen
         self.oled.show()
     
-    def draw_screen(self, ui_view):
-        if ui_view == 'wifi_room':
-            print('cool')
-            
-
