@@ -332,4 +332,4 @@ class OledUI:
 
         # Pushes everything to the screen
         self.oled.show()
-
+    

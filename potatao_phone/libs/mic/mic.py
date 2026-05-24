@@ -6,7 +6,7 @@ import mic_dsp  # our C module
 class Mic:
     GAIN = 12 # sound loudenest
 
-    def __init__(self, i2s_id, sck_pin, ws_pin, sd_pin, btn_trigger_pin):
+    def __init__(self, i2s_id, sck_pin, ws_pin, sd_pin):
         self.mic_I2S = I2S(
             i2s_id,
             sck=Pin(sck_pin),
@@ -25,19 +25,6 @@ class Mic:
         self.seq_num         = 0
         self.record_start_ms = 0
 
-        self.button = Pin(btn_trigger_pin, Pin.IN, Pin.PULL_UP)
-        self.button.irq(
-            trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING,
-            handler=self._handle_button
-        )
-
-    def _handle_button(self, pin):
-        if pin.value() == 0:
-            self.is_recording    = True
-            self.seq_num         = 0
-            self.record_start_ms = time.ticks_ms()
-        else:
-            self.is_recording = False
 
     #def process(self, sock, server_ip, server_port):
     def process(self):
