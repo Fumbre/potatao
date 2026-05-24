@@ -12,6 +12,7 @@ dependencies = [
     "boto3-stubs[s3]",
     "PyJWT",
     "cryptography",
+    "pydantic",
     "pysqlite3-binary",
     "redis"
 ]

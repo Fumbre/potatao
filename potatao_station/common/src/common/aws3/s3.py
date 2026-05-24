@@ -33,7 +33,7 @@ class S3Util:
                         endpoint_url = endpoint,
                         aws_access_key_id = access_key,
                         aws_secret_access_key = secret_key,
-                        region = "eu-east-1"
+                        region_name = "eu-east-1"
                     )
         return cls._instance
     

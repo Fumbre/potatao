@@ -12,7 +12,7 @@ from service.config.config import settings
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     ## init db
-    DB.init(settings.db.db_path,settings.db.password)
+    DB.init(settings.db.path,settings.db.password)
     ##init redis
     RedisClient.init(ip=settings.redis.host,port=settings.redis.port,password=settings.redis.password,db=settings.redis.db,max_connection=settings.redis.max_connection)
     ##init aws3 client

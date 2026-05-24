@@ -33,3 +33,16 @@ class RedisClient:
     @classmethod
     def delete(cls,*key:str)->int:
         return cls._client.delete(names = key)
+
+
+    @classmethod
+    def sadd(cls,key:str,*value:Any)->int:
+        return int(cls._client.sadd(key,*value))
+
+    @classmethod
+    def sremove(cls,key:str,*data:Any)->int:
+        return int(cls._client.srem(key,*data))
+
+    @classmethod
+    def sexist(cls,key:str,data:str)->bool:
+        return bool(cls._client.sismember(key,data))
