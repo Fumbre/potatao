@@ -26,9 +26,10 @@ def db_create(db):
         (2, 0, 'NRF mess',   1, 'link'),
         (3, 0, 'SD Card',    2, 'get_sdcard_data'),
         (4, 0, 'Settings',   3, 'link'),
-        (5, 4, 'Volume',     1, 'volume_state'),
-        (6, 4, 'Nickname',   2, 'change_nickname'),
-        (7, 4, 'Back',       3, 'pop_back'),
+        (5, 0, 'Extra',      4, 'link'),
+        (6, 4, 'Volume',     1, 'volume_state'),
+        (7, 4, 'Nickname',   2, 'change_nickname'),
+        (8, 4, 'Back',       3, 'pop_back'),
     ]
 
     # Dynamic SQL string construction for usqlite

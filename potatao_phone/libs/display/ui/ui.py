@@ -69,6 +69,14 @@ class UI:
 
         self.oled.show()
 
+    # re render
+    def rerender(self, list, cursor, scroll, title= 'Potatao menu'):
+
+        self.render_header(title, inverted=True)
+        self.render_main(list, cursor, scroll=scroll)
+
+        self.flush()
+
     # ── FULL SCREEN HELPERS 
 
     def splash(self, title="POTATAO", subtitle="Loading..."):
