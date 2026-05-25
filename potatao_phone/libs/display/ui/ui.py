@@ -24,7 +24,7 @@ class UI:
         self.oled.fill(0)
         self.oled.show()
 
-    # ── ZONE RENDERING ──────────────────────────────────
+    # ── ZONE RENDERING ─────────────Approved─────────────────────
 
     def render_header(self, text, inverted=False):
         """renders header bar — call only when top content changes"""
@@ -54,7 +54,10 @@ class UI:
         self.oled.text(text[:16], 0, ZONE_BOTTOM_Y + 2, 1)
 
     def flush(self):
-        """push buffer to screen — call ONCE after all zones rendered"""
+        """push buffer to screen — call ONCE after all zones rendered
+           Think of it like a re-render
+        """
+
         self.oled.show()
 
     # ── FULL SCREEN HELPERS ─────────────────────────────
@@ -65,11 +68,11 @@ class UI:
         self.oled.text(title, x, 18, 1)
         x2 = (WIDTH - len(subtitle) * 8) // 2
         self.oled.text(subtitle, x2, 34, 1)
-        self.oled.hline(0, 56, WIDTH, 1)
-        self.oled.text("NHL Stenden", 24, 58, 1)
+        self.oled.hline(0, 54, WIDTH, 1)
+        self.oled.text("NHL Stenden", 24, 57, 1)
         self.oled.show()
 
-    # notify can use footer (mb header) notification
+    # full screen massange; usefull for recording... 
     def notify(self, line1, line2=""):
         self.oled.fill(0)
         self.oled.rect(0, 0, WIDTH, HEIGHT, 1)
