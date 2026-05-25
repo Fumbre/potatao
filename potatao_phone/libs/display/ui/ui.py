@@ -24,7 +24,7 @@ class UI:
         self.oled.fill(0)
         self.oled.show()
 
-    # ── ZONE RENDERING ─────────────Approved─────────────────────
+    # ── ZONE RENDERING 
 
     def render_header(self, text, inverted=False):
         """renders header bar — call only when top content changes"""
@@ -32,20 +32,29 @@ class UI:
         fg = 0 if inverted else 1
         self.oled.fill_rect(0, 0, WIDTH, ZONE_TOP_H, bg)
         self.oled.text(text[:16], 2, 1, fg)
-
-    def render_main(self, items, selected, scroll=0):
+    
+    def render_main(self, items_list, selected, scroll=0):
         """renders main zone only — call when cursor moves"""
         self.oled.fill_rect(0, ZONE_CONTENT_Y, WIDTH, ZONE_CONTENT_H, 0)
         visible = ZONE_CONTENT_H // LINE_H   # 4 rows visible
 
-        for i, item in enumerate(items[scroll: scroll + visible]):
+        # 1. Slice the list of row dictionaries first
+        for i, item in enumerate(items_list[scroll: scroll + visible]):
             abs_i = i + scroll
             y = ZONE_CONTENT_Y + (i * LINE_H)
+            
+            # 2. Extract the string name from the dictionary item safely
+            item_name = item["name"]
+
             if abs_i == selected:
+                # Highlight bar
                 self.oled.fill_rect(0, y, WIDTH, LINE_H, 1)
-                self.oled.text(f"> {item}"[:16], 0, y + 1, 0)
+                # Max 14 chars so it doesn't spill off screen next to the "> "
+                self.oled.text(f"> {item_name}"[:16], 0, y + 1, 0)
             else:
-                self.oled.text(f"  {item}"[:16], 0, y + 1, 1)
+                # Normal text
+                self.oled.text(f"  {item_name}"[:16], 0, y + 1, 1)
+
 
     def render_footer(self, text):
         """renders footer hint bar — call only when hints change"""
@@ -60,7 +69,7 @@ class UI:
 
         self.oled.show()
 
-    # ── FULL SCREEN HELPERS ─────────────────────────────
+    # ── FULL SCREEN HELPERS 
 
     def splash(self, title="POTATAO", subtitle="Loading..."):
         self.oled.fill(0)

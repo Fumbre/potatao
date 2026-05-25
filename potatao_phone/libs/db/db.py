@@ -1,11 +1,10 @@
 def db_exist(db) -> bool:
     try:
         # check if our main table exists
-        result = db.execute("""
-            SELECT COUNT(*) FROM sqlite_master 
-            WHERE type='table' AND name='potatao_ui'
-        """).fetchone()
-        return result[0] > 0
+        cursor = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='potatao_ui'")
+        row = cursor.fetchone()
+      
+        return row is not None
     except:
         return False
     

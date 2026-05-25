@@ -5,12 +5,11 @@ class StateManager:
         self._stack   = []
         self._cursors = {}
         self.is_recording = False
-        self.push("MAIN", {})
 
-    def push(self, screen: str, context: dict = {}):
-        self._stack.append([screen, dict(context)])
+    def push_stack(self, context: dict = {}):
+        self._stack.append(context)
 
-    def pop(self):
+    def pop_stack(self):
         if len(self._stack) > 1:
             self._stack.pop()
 
@@ -18,31 +17,32 @@ class StateManager:
         """how deep in the stack we are — useful for back button logic"""
         return len(self._stack)
 
-    def current_screen(self) -> str:
-        return self._stack[-1][0]
-
-    def current_context(self) -> dict:
-        return self._stack[-1][1]
-
+    def current_stack(self) -> dict:
+        return self._stack[-1]
+    
+    def _max_items_count(self) -> int:
+        return len(self._stack[-1])
+    
     def cursor(self) -> int:
-        return self._cursors.get(self.current_screen(), 0)
+        return self._cursors.get(self.depth(), 0)
 
-    def move_cursor(self, delta: int, max_items: int):
+    def move_cursor(self, delta: int):
         if self.is_recording:
             return
-        screen  = self.current_screen()
+        
+        screen  = self.depth()
         current = self._cursors.get(screen, 0)
-        self._cursors[screen] = (current + delta) % max_items
+        self._cursors[screen] = (current + delta) % self._max_items_count()
 
-    def reset_cursor(self, screen: str = None):
-        key = screen or self.current_screen()
+    def reset_cursor(self):
+        key = self.depth()
         self._cursors[key] = 0
 
     # ── DEBUG ────────────────────────────────────────────
 
     def debug(self):
         print(f"Stack depth: {self.depth()}")
-        for i, (screen, ctx) in enumerate(self._stack):
-            print(f"  [{i}] {screen} {ctx}")
+        for i, (ctx) in enumerate(self._stack):
+            print(f"  [{i}] {ctx}")
         print(f"  cursor={self.cursor()} recording={self.is_recording}")
         # print(f"  list={self._list}") view list of rendered item
