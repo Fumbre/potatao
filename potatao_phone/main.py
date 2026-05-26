@@ -1,48 +1,76 @@
-from libs.mic.mic import Mic
-from libs.wifi.wifi import Wifi
-from libs.conf.env import load_env
-from libs.display.oled.oled_ui import OledUI
-from libs.display.ui.components.language.Language_settings import LanguageSettings  
-import socket
+
+import usqlite
+import sdcard
+
+from libs.conf.pins import PIN_SDCARD_CLK, PIN_SDCARD_MOSI, PIN_SDCARD_MISO, PIN_SDCARD_CS
+from libs.display.ui.ui import UI
+from libs.data_query.ui import get_view
+from libs.db.db import db_create, db_exist
+
+from libs.managers.event_manager import EventManager
+from libs.managers.state_manager import StateManager
+from libs.managers.function_manager import FunctionManager
+
 import utime
+import os
+
+from machine import Pin, SPI
+
+# TODO: 
+# - make a setup function for every setup
 
 
-config = load_env()
-SSID = config.get("SSID", "")
-WIFI_PASSWORD = config.get("WIFI_PASSWORD", "")
+# SD setup
+spi = SPI(1, baudrate=10_000_000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
+sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
+vfs = os.VfsFat(sd)
+os.mount(vfs, "/sd")
 
-def setup():
-    global mic, wifi, ui, language_settings
-    mic = Mic(0, 16, 17, 18, 22)
-    wifi = Wifi(SSID, WIFI_PASSWORD)
-    ui = OledUI(sda_pin = 10, scl_pin = 11)
-    language_settings = LanguageSettings()
+# os.remove("/sd/potatao.db")
 
-setup()
-wifi.connect()
+# Display setup
+ui = UI()
 
-# Setup UDP Socket
-server_ip = config.get("SERVER_IP", "") # Your computer's IP
-server_port = int(config.get("SERVER_PORT", ""))
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Starting window
+ui.splash("POTATAO", "Starting...")
+
+# DB setup
+db = usqlite.connect("/sd/potatao.db")
+
+# create db structure if not exitst
+if not db_exist(db):
+    db_create(db)
+
+# Managers
+state_manager = StateManager()
+event_manager = EventManager(state_manager)
+function_manager = FunctionManager(
+    state_manager = state_manager,
+    db            = db,
+    # wifi          = wifi,    
+    # nrf           = nrf,     
+    # mic           = mic,
+)
+state_manager.function_manager = function_manager
+
+
+# Pre Render setup
+view_list = get_view(db, 0)
+state_manager.push_stack(view_list)
+
+# ── MAIN LOOP ────────────────────────────────────────────
 
 try:
-
     while True:
-        if not mic.is_recording:
-            ui.oled.fill(0)
-            ui.oled.text(f"Lang: {language_settings.get_language()}", 0, 0, 1)
-            ui.oled.show()
-            utime.sleep(0.05)
-        mic.process(sock=sock, server_ip=server_ip, server_port=server_port)
-            # if test:
-                # test = False
-                # ui.oled.fill(0)
-                # ui.oled.text("Recorded", 0, 0, 1)
-                # ui.oled.show()
-        
-        # utime.sleep(0.05)
+        if event_manager.process():
+            ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
+            
+            state_manager.debug()
 
-finally:
-    mic.deinit()
+        utime.sleep_ms(15)
 
+except KeyboardInterrupt:
+    db.close()
+    os.umount("/sd")
+    print("Stopped")
+    

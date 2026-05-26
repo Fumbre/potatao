@@ -1,6 +1,7 @@
 [submodule "micropython"]
     path = potatao_phone/micropython
     url = https://github.com/micropython/micropython.git
+    ignore = dirty
 
 [submodule "pico-sdk"]
     path = potatao_phone/pico-sdk

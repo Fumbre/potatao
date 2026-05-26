@@ -3,11 +3,11 @@ from pathlib import Path
 from pydantic_settings import BaseSettings,SettingsConfigDict
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class DBSettings(BaseModel):
-    db_path:str = "potatao.db"
+    path:str = "potatao.db"
     password:str = "123456"
 
 
@@ -30,17 +30,16 @@ class CustomSettings(BaseModel):
 
 
 class AppSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        extra="ignore"
+    )
+
     db:DBSettings = DBSettings()
     redis:RedisSettings = RedisSettings()
     project:CustomSettings = CustomSettings()
     s3:AWS3Settings = AWS3Settings()
-
-
-config = SettingsConfigDict(
-    env_file= PROJECT_ROOT/ ".env",
-    env_file_encoding="utf-8",
-    env_nested_delimiter="__",
-    extra="ignore"
-)
 
 settings = AppSettings()
