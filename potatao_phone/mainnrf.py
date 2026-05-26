@@ -15,12 +15,6 @@ def setup():
 
 setup()
 
-
-# Setup UDP Socket
-server_ip = config.get("SERVER_IP", "") # Your computer's IP
-server_port = int(config.get("SERVER_PORT", ""))
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 try:
 
     while True:
