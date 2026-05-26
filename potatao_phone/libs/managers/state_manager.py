@@ -60,6 +60,9 @@ class StateManager:
 
 
     def handle_agree(self):
+        if self.is_recording:
+            return False
+         
         menu_selected = self.cursor()
         current_item  = self.current_stack()[menu_selected]
         function_name = current_item["function_name"]
@@ -68,6 +71,9 @@ class StateManager:
 
     
     def handle_cancel(self):
+        if self.is_recording:
+            return False
+        
         if self.depth() > 1:
             # Wipe out old nested track pointers to prevent index overlap bugs
             if self.depth() in self._cursors:
@@ -77,21 +83,25 @@ class StateManager:
         return False
     
     def handle_home(self):
+        if self.is_recording:
+            return False
+        
         # Only reset if we aren't recording and aren't already on the home screen
-        if not self.is_recording and self.depth() > 1:
+        if self.depth() > 1:
             self._stack   = [self._stack[0]]
             self._cursors = {1: 0}
             return True
-        if not self.is_recording and self.depth() == 1:
+        if self.depth() == 1:
             self._cursors = {1: 0}
             return True 
         return False
 
-    def handle_recording(self):
+    def handle_recording(self, pressed):
         # based on high or low we put it to state manager.is_recording
         # in main, if our state_manager.is_recording
         # init mic proccess
-        print("rec")
+        self.is_recording = pressed
+        # self.rec_destination
         
 
     # ── DEBUG ────────────────────────────────────────────

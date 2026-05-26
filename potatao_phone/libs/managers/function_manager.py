@@ -1,5 +1,7 @@
 # libs/managers/function_manager.py
 
+from libs.data_query.ui import get_view 
+
 class FunctionManager:
 
     def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None):
@@ -35,10 +37,7 @@ class FunctionManager:
     def _link(self, item: dict) -> bool:
         """fetch children from db and push to stack"""
         parent_id = item["id"]
-        rows = self.db.execute(
-            "SELECT * FROM potatao_ui WHERE parent_id=? ORDER BY order_num",
-            (parent_id,)
-        ).fetchall()
+        rows = get_view(self.db, parent_id)
 
         if not rows:
             print(f"[FunctionManager] No children for id {parent_id}")
@@ -54,7 +53,9 @@ class FunctionManager:
         if self.wifi is None:
             print("[FunctionManager] WiFi not available")
             return False
-        self.state_manager.is_recording = True
+        
+        self.wifi.connect()
+        
         self.state_manager.rec_destination = "wifi"
         return True
 
@@ -63,7 +64,6 @@ class FunctionManager:
         if self.nrf is None:
             print("[FunctionManager] NRF not available")
             return False
-        self.state_manager.is_recording = True
         self.state_manager.rec_destination = "nrf"
         return True
 
@@ -72,13 +72,11 @@ class FunctionManager:
         if self.nrf is None:
             print("[FunctionManager] NRF not available")
             return False
-        self.state_manager.is_receiving = True
         self.state_manager.rec_destination = "nrf"
         return True
 
     def _write_sd(self, context: dict) -> bool:
         """rec button → write audio to sd card"""
-        self.state_manager.is_recording = True
         self.state_manager.rec_destination = "sd"
         return True
 

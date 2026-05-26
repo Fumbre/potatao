@@ -1,6 +1,6 @@
 
 from machine import Pin
-from libs.conf.pins import PIN_BTN_AGREE, PIN_BTN_CANCEL, PIN_BTN_HOME, PIN_ENC_A, PIN_ENC_B, PIN_REC_BTN
+from libs.conf.pins import PIN_BTN_AGREE, PIN_BTN_CANCEL, PIN_BTN_HOME, PIN_ENC_A, PIN_ENC_B, PIN_BTN_REC
 from libs.debounce.encoder_debounce import EncoderDebounce
 
 
@@ -16,7 +16,7 @@ class EventManager:
             "home":          False,
             "encoder_delta": 0,
             "ui_update":     True,   # Force first UI draw cycle
-            "recording":     False,  
+            "record":        False,  
         }
         
         # Initialize Hardware Interrupt Routines
@@ -28,7 +28,7 @@ class EventManager:
         Pin(PIN_BTN_AGREE,  Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_agree)
         Pin(PIN_BTN_CANCEL, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_cancel)
         Pin(PIN_BTN_HOME,   Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_home)
-        Pin(PIN_REC_BTN,    Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._on_rec)
+        Pin(PIN_BTN_REC,    Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._on_rec)
         
         # Setup rotary encoder debouncer, binding directly to an internal class callback
         self.encoder = EncoderDebounce(PIN_ENC_A, PIN_ENC_B, callback=self._on_encoder)
@@ -46,8 +46,7 @@ class EventManager:
 
     def _on_rec(self, pin):
         # Toggles recording state
-        self.flags["recording"] = not self.flags["recording"]
-        self.flags["ui_update"] = True
+        self.flags["record"] = True
 
     def _on_encoder(self, delta):
         self.flags["encoder_delta"] += delta
@@ -73,13 +72,14 @@ class EventManager:
             self.flags["ui_update"] = self.state_manager.handle_agree()
 
 
-        if self.flags["recording"]:
-            self.flags["recording"] = False
+        if self.flags["record"]:
+            self.flags["record"] = False
             # recoring event should be both
             # when we press button
             # when we unpress button
             # based on high or low we put it to state manager.is_recording
-            self.state_manager.handle_recording()
+            pressed = Pin(PIN_BTN_REC).value() == 0 if True else False
+            self.state_manager.handle_recording(pressed)
             self.flags["ui_update"] = True
 
 

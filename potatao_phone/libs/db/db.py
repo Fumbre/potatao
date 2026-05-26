@@ -19,6 +19,7 @@ def db_create(db):
         );
     """)
 
+
     # Define default dataset
     default_items = [
         (1, 0, 'WiFi mess',  0, 'link'),
@@ -29,6 +30,8 @@ def db_create(db):
         (6, 4, 'Volume',     1, 'volume_state'),
         (7, 4, 'Nickname',   2, 'change_nickname'),
         (8, 4, 'Back',       3, 'pop_back'),
+        (9, 2, 'receive from NRF',       0, 'send_nrf'),
+        (10, 2, 'send to NRF',       1, 'receive_nrf'),
     ]
 
     # Dynamic SQL string construction for usqlite
@@ -41,8 +44,8 @@ def db_create(db):
     # Wrap everything inside a single transaction string
     transaction_sql = f"BEGIN TRANSACTION;{insert_statements}COMMIT;"
     
-    print(transaction_sql)
-
     db.executemany(transaction_sql)
 
     print("Database ready!")
+
+
