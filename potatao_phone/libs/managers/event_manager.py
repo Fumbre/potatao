@@ -69,8 +69,8 @@ class EventManager:
 
         if self.flags["agree"]:
             self.flags["agree"] = False
-            self.state_manager.handle_agree()
-            self.flags["ui_update"] = True
+            
+            self.flags["ui_update"] = self.state_manager.handle_agree()
 
 
         if self.flags["recording"]:

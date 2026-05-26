@@ -1,11 +1,13 @@
-# libs/display/ui/state_manager.py
-import libs.display.ui.api
+# libs/managerss/state_manager.py
 
 class StateManager:
-    def __init__(self):
+    def __init__(self, function_manager = None):
         self._stack   = []
         self._cursors = {1: 0}
         self.is_recording = False
+        self.is_receiving  = False        
+        self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
+        self.function_manager = function_manager
 
     def push_stack(self, context: dict = {}):
         self._stack.append(context)
@@ -58,11 +60,11 @@ class StateManager:
 
 
     def handle_agree(self):
-        method_id = self.cursor()
-        current_list = self.current_stack()
+        menu_selected = self.cursor()
+        current_item  = self.current_stack()[menu_selected]
+        function_name = current_item["function_name"]
+        return self.function_manager.execute(function_name, current_item)
 
-        current_item = current_list[method_id]
-        print(current_item)
 
     
     def handle_cancel(self):
@@ -90,6 +92,7 @@ class StateManager:
         # in main, if our state_manager.is_recording
         # init mic proccess
         print("rec")
+        
 
     # ── DEBUG ────────────────────────────────────────────
 

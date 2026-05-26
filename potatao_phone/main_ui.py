@@ -1,5 +1,5 @@
 from libs.display.ui.ui import UI
-from libs.display.ui.state_manager import StateManager
+from potatao.potatao_phone.libs.managers.state_manager import StateManager
 from machine import Pin
 import utime
 

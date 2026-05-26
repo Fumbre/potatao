@@ -4,10 +4,12 @@ import sdcard
 
 from libs.conf.pins import PIN_SDCARD_CLK, PIN_SDCARD_MOSI, PIN_SDCARD_MISO, PIN_SDCARD_CS
 from libs.display.ui.ui import UI
-from libs.display.ui.state_manager import StateManager
-from libs.display.ui.api.view import get_view
+from libs.data_query.ui import get_view
 from libs.db.db import db_create, db_exist
-from libs.events.event_manager import EventManager
+
+from libs.managers.event_manager import EventManager
+from libs.managers.state_manager import StateManager
+from libs.managers.function_manager import FunctionManager
 
 import utime
 import os
@@ -42,6 +44,14 @@ if not db_exist(db):
 # Managers
 state_manager = StateManager()
 event_manager = EventManager(state_manager)
+function_manager = FunctionManager(
+    state_manager = state_manager,
+    db            = db,
+    # wifi          = wifi,    
+    # nrf           = nrf,     
+    # mic           = mic,
+)
+state_manager.function_manager = function_manager
 
 
 # Pre Render setup

@@ -3,7 +3,6 @@ def db_exist(db) -> bool:
         # check if our main table exists
         cursor = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='potatao_ui'")
         row = cursor.fetchone()
-      
         return row is not None
     except:
         return False
@@ -41,6 +40,8 @@ def db_create(db):
 
     # Wrap everything inside a single transaction string
     transaction_sql = f"BEGIN TRANSACTION;{insert_statements}COMMIT;"
+    
+    print(transaction_sql)
 
     db.executemany(transaction_sql)
 
