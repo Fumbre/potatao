@@ -1,15 +1,17 @@
 # libs/managers/function_manager.py
-
+import os
 from libs.data_query.ui import get_view 
+
 
 class FunctionManager:
 
-    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None):
+    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None):
         self.state_manager = state_manager
         self.db = db
         self.wifi = wifi
         self.nrf = nrf
         self.mic = mic
+        self.sd = sd
 
         # registry — name -> methods
         self._registry = {
@@ -19,6 +21,8 @@ class FunctionManager:
             "receive_nrf":    self._receive_nrf,
             "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
+            "write_sdcard": self._write_sdcard, 
+            "read_mic": self._read_mic,
         }
 
     def execute(self, function_name: str, context: dict) -> bool:
@@ -85,3 +89,22 @@ class FunctionManager:
         # skip for now 
         print("[FunctionManager] get_sdcard_data not implemented yet")
         return False
+    
+    def _read_mic(self):
+        if self.mic is None:
+            print("Mic is not init")
+            return False
+        
+        # path_id = context[-1]["parent_id"]
+
+        # path_name = path_id == 0 if "sd_card" else context[-2][path_id]["name"]
+        
+        if self.state_manager.is_recording:
+            buff = self.mic.process()
+            return buff
+    
+    def _write_sdcard(self, context: dict, buff, name):
+        with open("/sd/{name}.wav", "wb") as f:
+            f.write(bytearray(44))
+
+             

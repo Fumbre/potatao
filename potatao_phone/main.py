@@ -3,12 +3,13 @@ import usqlite
 import sdcard
 
 from libs.conf.env import load_env
-from libs.conf.pins import PIN_SDCARD_CLK, PIN_SDCARD_MOSI, PIN_SDCARD_MISO, PIN_SDCARD_CS
+from libs.conf.pins import *
 
 from libs.display.ui.ui import UI
 from libs.data_query.ui import get_view
 from libs.db.db import db_create, db_exist
 from libs.wifi.wifi import Wifi
+from libs.mic.mic import Mic
 
 from libs.managers.event_manager import EventManager
 from libs.managers.state_manager import StateManager
@@ -58,6 +59,10 @@ config = load_env()
 # setup Wifi
 wifi = Wifi(config.get("SSID", "") , config.get("WIFI_PASSWORD", ""))
 
+
+#setup Mic
+mic = Mic(0, PIN_MIC_SCK, PIN_MIC_WS, PIN_MIC_SD)
+
 # Managers
 state_manager = StateManager()
 event_manager = EventManager(state_manager)
@@ -66,7 +71,8 @@ function_manager = FunctionManager(
     db            = db,
     wifi          = wifi,
     # nrf           = nrf,     
-    # mic           = mic,
+    mic           = mic,
+    sd            = sd,
 )
 state_manager.function_manager = function_manager
 
@@ -79,6 +85,11 @@ state_manager.push_stack(view_list)
 
 try:
     while True:
+        if state_manager.is_recording:
+            name="record.wav"
+            buff = function_manager._read_mic()
+            function_manager._write_sdcard(state_manager.current_stack(), buff, name)
+
         if event_manager.process():
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
