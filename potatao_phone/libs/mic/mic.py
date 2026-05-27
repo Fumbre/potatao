@@ -31,6 +31,8 @@ class Mic:
             bytes_written = mic_dsp.convert(self.mv[:num_read], self.out_buf, self.GAIN)
             return self.out_buf[:bytes_written]
 
+
+
     # put it somewhere with wifi related
     # wifi sender adds header when needed
     # def send_wifi(chunk, seq_num, record_start_ms):

@@ -2,6 +2,9 @@
 import os
 import struct
 from libs.data_query.ui import get_view
+import uasyncio
+from libs.communication.communication import ws_connect,is_sending,ws_send
+from libs.encrpytion.encryption import shake_hands
 
 class FunctionManager:
     # WAV constants
@@ -111,6 +114,13 @@ class FunctionManager:
         # write placeholder WAV header — real values written on stop
         self._rec_file.write(bytearray(44))
         print(f"[FunctionManager] Recording started → {path}")
+        # exchange encryption key with zero
+        shake_hands()
+        # open websocket connection
+        try:
+            uasyncio.run(ws_connect())
+        except:
+            print("build websocket channel failed!")    
 
     def write_chunk(self):
         """write one mic chunk — called every loop while recording"""
@@ -123,6 +133,15 @@ class FunctionManager:
 
         self._rec_file.write(chunk)
         self._rec_byte_count += len(chunk)
+        
+        #create ws_send asyncio task
+        if not is_sending:
+            data = {
+                "data":chunk,
+                "target_machine_id":"test",
+                "is_end":False
+            }
+            uasyncio.create_task(ws_send(data=data))
 
 
     def stop_recording(self):
@@ -141,7 +160,7 @@ class FunctionManager:
         print("[FunctionManager] Recording stopped and saved")
 
         self.mic.deinit()   # ← clean up I2S hardware
-
+        ## TODO: websocket disconnection
 
     def _make_wav_header(self, data_size: int) -> bytes:
         byte_rate   = self.SAMPLE_RATE * self.NUM_CHANNELS * self.BITS_PER_SAMPLE // 8
