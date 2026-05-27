@@ -6,6 +6,10 @@ git submodule update --init --recursive sudo pacman -S arm-none-eabi-gcc arm-non
 ## Build
 ./build_micropython.sh
 
+## SAVE RAM with mpy (binary for py)
+mpy-cross libs/display/ui/ui.py
+mpy-cross libs/managers/function_manager.py
+
 ## Files that should be on Pico
 
 1. folder: libs
