@@ -95,14 +95,16 @@ class StateManager:
             self._cursors = {1: 0}
             return True 
         return False
+    
+    def handle_recording(self, pressed: bool):
+        if pressed and not self.is_recording:
+            self.is_recording = True
+            self.function_manager.start_recording()
 
-    def handle_recording(self, pressed):
-        # based on high or low we put it to state manager.is_recording
-        # in main, if our state_manager.is_recording
-        # init mic proccess
-        self.is_recording = pressed
-        # self.rec_destination
-        
+        elif not pressed and self.is_recording:
+            self.is_recording = False
+            self.function_manager.stop_recording()
+
 
     # ── DEBUG ────────────────────────────────────────────
 
