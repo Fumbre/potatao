@@ -1,4 +1,3 @@
-
 import usqlite
 import sdcard
 
@@ -25,6 +24,7 @@ gc.collect()
 
 # TODO: 
 # - make a setup function for every setup
+# - make a setup until main loop
 
 
 # SD setup
