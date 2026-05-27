@@ -1,4 +1,3 @@
-
 import usqlite
 import sdcard
 
@@ -25,6 +24,7 @@ gc.collect()
 
 # TODO: 
 # - make a setup function for every setup
+# - make a setup until main loop
 
 
 # SD setup
@@ -86,9 +86,9 @@ state_manager.push_stack(view_list)
 try:
     while True:
         if state_manager.is_recording:
-            name="record.wav"
-            buff = function_manager._read_mic()
-            function_manager._write_sdcard(state_manager.current_stack(), buff, name)
+            function_manager.write_chunk() # after write chunk clear memory
+        else:
+            utime.sleep_ms(15)
 
         if event_manager.process():
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
@@ -96,9 +96,11 @@ try:
                 ui.notify(state_manager.rec_destination, "Recording...")
             state_manager.debug()
 
-        utime.sleep_ms(15)
+        
+
 
 except KeyboardInterrupt:
+    function_manager.stop_recording() 
     db.close()
     os.umount("/sd")
     print("Stopped")
