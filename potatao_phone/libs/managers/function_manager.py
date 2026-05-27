@@ -93,9 +93,32 @@ class FunctionManager:
         return True
 
     def _get_sdcard_data(self, context: dict) -> bool:
-        for f in os.listdir("/sd/recordings"):
-            print("  ", f)
-        return False
+        folder = "/sd/recordings"
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            print(f"[FunctionManager] No recordings folder")
+            return False
+
+        rows = []
+        for name in sorted(names):
+            if not name.lower().endswith(".wav"):
+                continue
+            rows.append({
+                "id":            len(rows),
+                "function_name": "play_recording",
+                "name":          name,
+                "parent_id":     context.get("id", -1),
+                "order_num":     len(rows),
+            })
+
+        if not rows:
+            print("[FunctionManager] No recordings found")
+            return False
+
+        self.state_manager.push_stack(rows)
+        self.state_manager.reset_cursor()
+        return True
 
     
     # ── RECORDING ───────────────────────────────────────
