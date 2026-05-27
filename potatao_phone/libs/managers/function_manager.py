@@ -100,8 +100,10 @@ class FunctionManager:
         # path_name = path_id == 0 if "sd_card" else context[-2][path_id]["name"]
         
         if self.state_manager.is_recording:
-            buff = self.mic.process()
-            return buff
+            # buff = self.mic.process()
+            print(self.state_manager.debug())
+            # return buff
+            return 1
     
     def _write_sdcard(self, context: dict, buff, name):
         with open("/sd/{name}.wav", "wb") as f:
