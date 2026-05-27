@@ -97,6 +97,7 @@ MIC_DSP_MODULE="$(abs_path "$SCRIPT_DIR/modules/mic_dsp/micropython.cmake")"
 X25519_MODULE="$(abs_path "$SCRIPT_DIR/modules/x25519/micropython.cmake")"
 JWT_MODULE="$(abs_path "$SCRIPT_DIR/modules/jwt/micropython.cmake")"
 
+
 MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${X25519_MODULE};${JWT_MODULE};"
 
 RP2_DIR="$SCRIPT_DIR/micropython/ports/rp2"

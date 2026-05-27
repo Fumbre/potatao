@@ -22,6 +22,18 @@ class FunctionManager:
         self._rec_file       = None
         self._rec_byte_count = 0
 
+        # sending files manager
+        self._snd_file = None
+
+        self._rcv_file = None
+        self._rcv_byte_count  = 0
+        self._rcv_chunk_index = 0
+
+
+        #nrf setup
+        self.address = b"1Node"
+        self.nrf_endmarker = b'\xff\xff\xff\xff'  
+
         # registry — name -> methods
         self._registry = {
             "link":           self._link,
@@ -30,6 +42,9 @@ class FunctionManager:
             "receive_nrf":    self._receive_nrf,
             "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
+            "send_data_to_nrf":    self._send_data_to_nrf, 
+            "send_nrf_chank": self._send_nrf_chank,
+            "stop_nrf_send": self._stop_nrf_send,
         }
 
     def execute(self, function_name: str, context: dict) -> bool:
@@ -72,27 +87,132 @@ class FunctionManager:
         self.state_manager.rec_destination = "wifi"
         return True
 
-    def _send_nrf(self, context: dict) -> bool:
+
+
+    def _send_nrf(self, context: dict):
         """rec button → send audio via nrf"""
         if self.nrf is None:
             print("[FunctionManager] NRF not available")
             return False
-        self.state_manager.rec_destination = "nrf"
+        self._get_sdcard_data(context, "send_data_to_nrf")
         return True
+    
+    def _send_data_to_nrf(self, context: dict):
+        # set flag to true
+        self.state_manager.is_nrf_sending = True
+        print(self.state_manager.is_nrf_sending)
+        print(context["name"])
+        filename = context["name"]
+        path = f"sd/recordings/{filename}"
+        self._snd_file = open(path, "rb")
+        self.nrf.open_tx_pipe(self.address)
+        #skip wav header
+        self._snd_file.seek(44)
+
+    def _send_nrf_chank(self):
+        if self.nrf is None or self._snd_file is None:
+            return
+          
+        chunk_size = 24
+        chunk = self._snd_file.read(chunk_size)
+        if not chunk:
+            end_marker = b'\xff\xff\xff\xff' + b'\x00' * (chunk_size - 4)
+            try:
+                self.nrf.send(end_marker)
+            except OSError:
+                pass
+            self._stop_nrf_send()
+            return
+        
+        if len(chunk) < chunk_size:
+            chunk = chunk + b'\x00' * (chunk_size - len(chunk))
+        
+        try:
+            self.nrf.send(chunk)
+        except OSError:
+            print(f"[NRF] Send failed at chunk")
+    
+    def _stop_nrf_send(self):
+        print(f"[NRF] Done — {self._snd_chunk_index} chunks sent")
+        self.state_manager.is_nrf_sending = False
+        if self._snd_file:
+            self._snd_file.close()
+            self._snd_file = None
+        
+
+
 
     def _receive_nrf(self, context: dict) -> bool:
         """receive audio via nrf"""
         if self.nrf is None:
             print("[FunctionManager] NRF not available")
             return False
-        self.state_manager.rec_destination = "nrf"
+        # self.state_manager.rec_destination = "nrf"
+        folder = "/sd/recordings"
+        self._ensure_folder(folder)
+        index = self._get_next_index(folder)
+        path  = f"{folder}/record_{index}.wav"
+
+        self._rcv_file       = open(path, "wb")
+        self._rcv_byte_count = 0
+        self._rcv_chunk_index = 0
+
+        # Write blank header placeholder — filled in on stop
+        self._rcv_file.write(bytearray(44))
+
+        self.nrf.open_rx_pipe(0, self.address)
+        self.nrf.start_listening()
+        self.state_manager.is_nrf_receiving = True
+        print(f"[NRF] Receiving → {path}")
         return True
+
+    def _receive_nrf_chunk(self):
+        """call every loop while is_nrf_receiving is True"""
+        if self.nrf is None or self._rcv_file is None:
+            return
+
+        #nado podumat' esli nikto ne otpravlyat////if nothing received for a long time what should we do
+        if not self.nrf.any():           # nothing arrived yet 
+            return
+
+        chunk = self.nrf.recv()
+
+        # Check for end marker in first 4 bytes
+        if chunk[:4] == self.nrf_endmarker:
+            self._stop_nrf_receive()
+            return
+
+        self._rcv_file.write(chunk)
+        self._rcv_byte_count  += len(chunk)
+        self._rcv_chunk_index += 1
+
+
+    def _stop_nrf_receive(self):
+        """write real WAV header and close"""
+        if self._rcv_file is None:
+            return
+
+        self.nrf.stop_listening()
+        self.state_manager.is_nrf_receiving = False
+
+        # Rewind and write correct WAV header
+        # Use same params your mic records at (e.g. 8000 Hz, mono, 16-bit)
+        self._rcv_file.seek(0)
+        self._rcv_file.write(
+            self._make_wav_header(self._rcv_byte_count)
+        )
+        self._rcv_file.close()
+        self._rcv_file        = None
+        print(f"[NRF] Received {self._rcv_chunk_index} chunks, {self._rcv_byte_count} bytes saved")
+
+
+
 
     def _write_sd(self, context: dict) -> bool:
         self.state_manager.rec_destination = "sd"
         return True
 
-    def _get_sdcard_data(self, context: dict) -> bool:
+    def _get_sdcard_data(self, context: dict, function_name: str = 'play_recording') -> bool:
         folder = "/sd/recordings"
         try:
             names = os.listdir(folder)
@@ -106,7 +226,7 @@ class FunctionManager:
                 continue
             rows.append({
                 "id":            len(rows),
-                "function_name": "play_recording",
+                "function_name": function_name,
                 "name":          name,
                 "parent_id":     context.get("id", -1),
                 "order_num":     len(rows),
