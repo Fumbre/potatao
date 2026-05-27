@@ -1,0 +1,3 @@
+'''
+Faster-Whisper + strategy pattern
+'''
