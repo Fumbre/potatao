@@ -90,15 +90,17 @@ else
 fi
 
 SDK_PATH="$(abs_path "$SCRIPT_DIR/pico-sdk")"
+PICO_EXTRAS_PATH="$(abs_path "$SCRIPT_DIR/pico-extras")"
 HELLO_MODULE="$(abs_path "$SCRIPT_DIR/modules/hello/micropython.cmake")"
 SQLITE_MODULE="$(abs_path "$SCRIPT_DIR/modules/sqlite/micropython.cmake")"
 SDCARD_MODULE="$(abs_path "$SCRIPT_DIR/modules/sdcard/micropython.cmake")"
 MIC_DSP_MODULE="$(abs_path "$SCRIPT_DIR/modules/mic_dsp/micropython.cmake")"
-X25519_MODULE="$(abs_path "$SCRIPT_DIR/modules/x25519/micropython.cmake")"
-JWT_MODULE="$(abs_path "$SCRIPT_DIR/modules/jwt/micropython.cmake")"
+SPEAKER_MODULE="$(abs_path "$SCRIPT_DIR/modules/speaker/micropython.cmake")"
+# X25519_MODULE="$(abs_path "$SCRIPT_DIR/modules/x25519/micropython.cmake")"
+# JWT_MODULE="$(abs_path "$SCRIPT_DIR/modules/jwt/micropython.cmake")"    
 
-
-MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${X25519_MODULE};${JWT_MODULE};"
+# MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${SPEAKER_MODULE}${X25519_MODULE};${JWT_MODULE};"
+MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${SPEAKER_MODULE}"
 
 RP2_DIR="$SCRIPT_DIR/micropython/ports/rp2"
 OUTPUT_DIR="$(choose_output_dir)"
@@ -117,6 +119,7 @@ cmake -S "$RP2_DIR" -B "$BUILD_DIR" \
     -DPICO_PLATFORM=rp2350 \
     -DBOARD="$BOARD_NAME" \
     -DMICROPY_BOARD="$BOARD_NAME" \
+    -DPICO_SDK_POST_LIST_DIRS="${PICO_EXTRAS_PATH}" \
     -DPICO_SDK_PATH="$SDK_PATH" \
     -DUSER_C_MODULES="$MODULES_PATHS" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE"

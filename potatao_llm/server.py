@@ -1,14 +1,19 @@
 '''
 FastAPI + WebSocket: entry point
 '''
+# This is necessary to use 'await', which allows you to wait for slow 
+# operations (network, processing) without freezing the server
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+
+# Import the server that will run the FastAPI application
 import uvicorn
  
 from transcriber import FasterWhisperTranscriber  # swap to OpenAITranscriber if needed
 from translator  import OllamaTranslator          # swap to OpenAITranslator if needed
 from tts         import PiperTTS                  # swap to ElevenLabsTTS / OpenAITTS if needed
  
+# Create FastAPI
 app = FastAPI()
  
 # Initialise components once at startup 
@@ -16,8 +21,9 @@ app = FastAPI()
 transcriber = FasterWhisperTranscriber(model_size="base")
 translator = OllamaTranslator(model="mistral")
 tts = PiperTTS()
- 
+
 # WebSocket endpoint 
+# Pi Zero will connect to ws://PC_IP:8000/audio
 @app.websocket("/audio")
 async def audio_endpoint(websocket: WebSocket):
     """
@@ -38,9 +44,14 @@ async def audio_endpoint(websocket: WebSocket):
                 continue
  
             # Parse language name from the first part of the message
-            lang_len = data[0]                        # first byte = length of language string
-            language = data[1:1 + lang_len].decode()  # next N bytes = language name
-            audio = data[1 + lang_len:]             # rest = WAV audio bytes
+            lang_len = data[0]                 # first byte = length of language string
+            
+            # next N bytes = language name
+            # Example: if lang_len = 6, read data[1:7] and get "French"
+            language = data[1:1 + lang_len].decode()  
+
+            # rest = WAV (Waveform Audio File Format) audio bytes
+            audio = data[1 + lang_len:]               
  
             print(f"[Server] Received {len(audio)} bytes of audio, target language: {language}")
  
@@ -49,7 +60,8 @@ async def audio_endpoint(websocket: WebSocket):
             # Speech to text
             text = await asyncio.to_thread(transcriber.transcribe, audio)
             print(f"[Server] Transcribed: {text}")
- 
+
+            # if silence
             if not text:
                 print("[Server] Empty transcription, skipping.")
                 continue
@@ -73,18 +85,14 @@ async def audio_endpoint(websocket: WebSocket):
  
  
 # Health check endpoint
- 
+# Allows to check if the server is running by opening http://IP:8000/health in your browser
 @app.get("/health")
 async def health():
-    """Simple endpoint to check the server is running."""
     return {"status": "ok"}
  
- 
-# Entry point
- 
+
 if __name__ == "__main__":
     # Run with: python server.py
     # Or: uvicorn server:app --host 0.0.0.0 --port 8000
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
-    
