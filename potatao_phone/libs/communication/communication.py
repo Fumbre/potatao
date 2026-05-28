@@ -1,14 +1,14 @@
 import ws
 from libs.conf.env import load_env
-import uasyncio
-from libs.encrpytion.encryption import encrypt_data,decrypt_data
+from libs.encrpytion.encryption import encrypt_data,decrypt_data,get_machine_id
 
 client = ws.AsyncWebsocketClient()
 config = load_env()
 is_sending = False
 
 async def ws_connect():
-   ws_url = f"ws://{config.get('ZERO_IP')}:{config.get('ZERO_PORT')}/api/v1/ws/audio"
+   machine_id = get_machine_id()
+   ws_url = f"ws://{config.get('ZERO_IP')}:{config.get('ZERO_PORT')}{config.get('PICO_WS_API')}/{machine_id}"
    if await client.handshake(uri=ws_url):
        await client.open() 
        print("websocket connected successfully!")

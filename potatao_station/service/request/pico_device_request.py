@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 
 class PicoDeviceRequest(BaseModel):
-
     data: str
 
 

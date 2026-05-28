@@ -96,23 +96,66 @@ class FunctionManager:
         return True
 
     def _get_sdcard_data(self, context: dict) -> bool:
-        print("[FunctionManager] get_sdcard_data not implemented yet")
-        return False
+        folder = "/sd/recordings"
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            print(f"[FunctionManager] No recordings folder")
+            return False
+
+        rows = []
+        for name in sorted(names):
+            if not name.lower().endswith(".wav"):
+                continue
+            rows.append({
+                "id":            len(rows),
+                "function_name": "play_recording",
+                "name":          name,
+                "parent_id":     context.get("id", -1),
+                "order_num":     len(rows),
+            })
+
+        if not rows:
+            print("[FunctionManager] No recordings found")
+            return False
+
+        self.state_manager.push_stack(rows)
+        self.state_manager.reset_cursor()
+        return True
 
     
     # ── RECORDING ───────────────────────────────────────
 
+    def _get_next_index(self, folder: str) -> int:
+        """scan folder for record_N.wav files and return max N + 1"""
+
+        max_index = -1
+        try:
+            for name in os.listdir(folder):
+                lower = name.lower()
+                if lower.startswith("record_") and lower.endswith(".wav"):
+                    try:
+                        n = int(lower[7:-4])
+                        if n > max_index:
+                            max_index = n
+                    except ValueError:
+                        pass
+        except OSError:
+            pass
+        return max_index + 1
+
     def start_recording(self):
         """open file once — called when REC pressed"""
-        folder = self._get_rec_folder()
+        folder = "/sd/recordings"
         self._ensure_folder(folder)
 
-        path = f"{folder}/record.wav"
-        self._rec_file       = open(path, "wb")
+        index = self._get_next_index(folder)
+        path = f"{folder}/record_{index}.wav"
+        self._rec_file       = open(path, "wb")   # SD ops while I2S is idle
         self._rec_byte_count = 0
+        self._rec_file.write(bytearray(44))        # placeholder WAV header
 
-        # write placeholder WAV header — real values written on stop
-        self._rec_file.write(bytearray(44))
+        self.mic.init()                            # start I2S only after SD is done
         print(f"[FunctionManager] Recording started → {path}")
         # exchange encryption key with zero
         shake_hands()
@@ -149,7 +192,8 @@ class FunctionManager:
         if self._rec_file is None:
             return
 
-        # write real WAV header now we know total size
+        self.mic.deinit()                          # stop I2S before SD ops
+
         self._rec_file.seek(0)
         self._rec_file.write(
             self._make_wav_header(self._rec_byte_count)
@@ -178,28 +222,6 @@ class FunctionManager:
             self.BITS_PER_SAMPLE,
             b'data', data_size
         )
-
-    def _get_rec_folder(self) -> str:
-        """builds folder path from current stack context"""
-        stack        = self.state_manager._stack
-        current_list = stack[-1]
-        cursor       = self.state_manager.cursor()
-        current_item = current_list[cursor]
-        parent_id    = current_item["parent_id"]
-
-        if parent_id == 0:
-            folder_name = "sd_card"
-        else:
-            # find parent name from stack below
-            parent_list = stack[-2]
-            parent_item = None
-            for item in parent_list:
-                if item["id"] == parent_id:
-                    parent_item = item
-                    break
-            folder_name = parent_item["name"].lower().replace(" ", "_") if parent_item else "unknown"
-
-        return f"/sd/recordings/{folder_name}"
 
     def _ensure_folder(self, path: str):
         """creates folder if it doesn't exist"""

@@ -74,3 +74,7 @@ async def disconnect(machine_id:str)->BaseResponse:
     ## delete this session id from redis
     RedisClient.delete(f"s3_session_id:{machine_id}")
     return BaseResponse.success()
+
+@router.get("/registeration/check/{machine_id}")
+async def is_registered(machine_id:str)->BaseResponse:
+    return BaseResponse.success(data=RedisClient.sexist("pico_device", machine_id))
