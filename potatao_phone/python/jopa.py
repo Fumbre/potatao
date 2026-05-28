@@ -1,5 +1,10 @@
+<<<<<<< HEAD
+from machine import Pin, SPI
+from libs.nrf24.nrf24l01 import NRF24L01
+=======
 from libs.nrf24.nrf24l01 import NRF24L01
 from machine import Pin, SPI
+>>>>>>> 22886e406be979170331317fab3c1fd175286a81
 import os
 import sdcard
 import struct
@@ -9,12 +14,19 @@ import utime
 # SD CARD
 # =========================================================
 
+<<<<<<< HEAD
+# SD setup
+=======
+>>>>>>> 22886e406be979170331317fab3c1fd175286a81
 spi = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
 sd = sdcard.SDCard(spi, Pin(13))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> 22886e406be979170331317fab3c1fd175286a81
 # =========================================================
 # NRF24
 # =========================================================
@@ -112,4 +124,8 @@ finally:
 
     os.umount("/sd")
 
+<<<<<<< HEAD
     print("DONE")
+=======
+    print("DONE")
+>>>>>>> 22886e406be979170331317fab3c1fd175286a81
