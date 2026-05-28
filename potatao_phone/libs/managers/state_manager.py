@@ -6,6 +6,8 @@ class StateManager:
         self._cursors = {1: 0}
         self.is_recording = False
         self.is_receiving  = False        
+        self.is_nrf_sending = False
+        self.is_nrf_receiving = False
         self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
         self.function_manager = function_manager
 
@@ -66,6 +68,7 @@ class StateManager:
         menu_selected = self.cursor()
         current_item  = self.current_stack()[menu_selected]
         function_name = current_item["function_name"]
+        print(function_name)
         return self.function_manager.execute(function_name, current_item)
 
 

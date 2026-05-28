@@ -9,6 +9,7 @@ from libs.data_query.ui import get_view
 from libs.db.db import db_create, db_exist
 from libs.wifi.wifi import Wifi
 from libs.mic.mic import Mic
+from libs.nrf24.nrf24l01 import NRF24L01
 
 from libs.managers.event_manager import EventManager
 from libs.managers.state_manager import StateManager
@@ -63,6 +64,30 @@ wifi = Wifi(config.get("SSID", "") , config.get("WIFI_PASSWORD", ""))
 #setup Mic
 mic = Mic(0, PIN_MIC_SCK, PIN_MIC_WS, PIN_MIC_SD)
 
+
+# setup nrf
+csn = Pin(PIN_NRF_CSN, Pin.OUT, value=1)
+ce = Pin(PIN_NRF_CE, Pin.OUT, value=0)
+
+spi = SPI(
+    0,
+    baudrate=1000000,
+    polarity=0,
+    phase=0,
+    sck=Pin(PIN_NRF_SCK),
+    mosi=Pin(PIN_NRF_MOSI),
+    miso=Pin(PIN_NRF_MISO)
+)
+
+nrf = NRF24L01(
+    spi,
+    csn,
+    ce,
+    channel=46,
+    payload_size=16
+)
+
+
 # Managers
 state_manager = StateManager()
 event_manager = EventManager(state_manager)
@@ -70,7 +95,7 @@ function_manager = FunctionManager(
     state_manager = state_manager,
     db            = db,
     wifi          = wifi,
-    # nrf           = nrf,     
+    nrf           = nrf,     
     mic           = mic,
     sd            = sd,
 )
@@ -87,6 +112,10 @@ try:
     while True:
         if state_manager.is_recording:
             function_manager.write_chunk() # after write chunk clear memory
+        elif state_manager.is_nrf_sending:
+            function_manager._send_nrf_chank()
+        elif state_manager.is_nrf_receiving:
+            function_manager._receive_nrf_chunk()
         else:
             utime.sleep_ms(15)
 
