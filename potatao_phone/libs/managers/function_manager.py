@@ -10,13 +10,14 @@ class FunctionManager:
     BITS_PER_SAMPLE = 16
     MIC_HEADER_SIZE = 8   # seq_num (4B) + timestamp_ms (4B)
 
-    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None):
+    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None, speaker=None):
         self.state_manager = state_manager
         self.db = db
         self.wifi = wifi
         self.nrf = nrf
         self.mic = mic
         self.sd = sd
+        self.speaker = speaker
 
         # recording state — file handle lives here between chunks
         self._rec_file       = None
@@ -31,8 +32,12 @@ class FunctionManager:
 
 
         #nrf setup
+        #put it to state manager
         self.address = b"1Node"
         self.nrf_endmarker = b'\xff\xff\xff\xff'  
+
+        #speaker setup
+        self._speaker_file = None
 
         # registry — name -> methods
         self._registry = {
@@ -45,6 +50,9 @@ class FunctionManager:
             "send_data_to_nrf":    self._send_data_to_nrf, 
             "send_nrf_chank": self._send_nrf_chank,
             "stop_nrf_send": self._stop_nrf_send,
+            "play_speaker": self._play_speaker,
+            "start_speaker": self._start_speaker,
+            "stop_speaker": self._start_speaker,
         }
 
     def execute(self, function_name: str, context: dict) -> bool:
@@ -207,12 +215,35 @@ class FunctionManager:
 
 
 
+    def _start_speaker(self, context: dict):
+        self.speaker.init()
+        self.state_manager.is_playing = True
+        path = f"/sd/recordings/{context["name"]}"
+        print(path)
+        self._speaker_file = open(path, "rb")
+        self._speaker_file.read(44)   # skip WAV header
+
+    def _play_speaker(self):
+    
+        buf = bytearray(1024)
+            
+        num_read = self._speaker_file.readinto(buf)
+        if num_read == 0:
+            self._stop_speaker()
+        self.speaker.play_chunk(buf[:num_read])
+
+    def _stop_speaker(self):
+        self.state_manager.is_playing = False
+        self._speaker_file.close()
+        self.speaker.deinit()
+
+
 
     def _write_sd(self, context: dict) -> bool:
         self.state_manager.rec_destination = "sd"
         return True
 
-    def _get_sdcard_data(self, context: dict, function_name: str = 'play_recording') -> bool:
+    def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
         folder = "/sd/recordings"
         try:
             names = os.listdir(folder)
@@ -334,3 +365,5 @@ class FunctionManager:
                 os.mkdir(current)
             except OSError:
                 pass   # already exists
+
+        
