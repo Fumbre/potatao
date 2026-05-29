@@ -18,3 +18,4 @@
 [submodule "potatao_phone/tools/openocd"]
 	path = potatao_phone/tools/openocd
 	url = https://github.com/raspberrypi/openocd.git
+    ignore = dirty 

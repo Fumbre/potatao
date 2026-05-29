@@ -9,6 +9,7 @@ from libs.data_query.ui import get_view
 from libs.db.db import db_create, db_exist
 from libs.wifi.wifi import Wifi
 from libs.mic.mic import Mic
+from libs.speaker.speaker import Speaker
 from libs.nrf24.nrf24l01 import NRF24L01
 
 from libs.managers.event_manager import EventManager
@@ -89,6 +90,13 @@ nrf = NRF24L01(
     payload_size=16
 )
 
+# Speaker setup
+speaker = Speaker(
+    i2s_id  = 1,                    # 1, cuz mic uses 0
+    sck_pin = PIN_SPEAKER_AMP_SCK,  # GP2
+    ws_pin  = PIN_SPEAKER_AMP_WS,   # GP3
+    sd_pin  = PIN_SPEAKER_AMP_SD    # GP4
+)
 
 # Managers
 state_manager = StateManager()
@@ -100,6 +108,7 @@ function_manager = FunctionManager(
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
+    speaker       = speaker,
 )
 state_manager.function_manager = function_manager
 
@@ -113,6 +122,7 @@ register()
 
 # ── MAIN LOOP ────────────────────────────────────────────
 
+
 try:
     while True:
         if state_manager.is_recording:
@@ -121,6 +131,8 @@ try:
             function_manager._send_nrf_chank()
         elif state_manager.is_nrf_receiving:
             function_manager._receive_nrf_chunk()
+        elif state_manager.is_playing:
+             function_manager._play_speaker()
         else:
             utime.sleep_ms(15)
 
