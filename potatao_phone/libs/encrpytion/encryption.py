@@ -2,8 +2,8 @@ import requests
 from requests import Response
 import machine
 import ubinascii
+import uhashlib
 import x25519
-import hmac
 import os
 import cryptolib
 from libs.conf.env import load_env
@@ -15,11 +15,16 @@ CONVERSATION_AES_KEY = None
 def register():
     ## configuration information from env
     config = load_env()
+    secret_key = config.get("SECRET_KEY")
     ## get pico machine id
     machine_id = get_machine_id()
     data = {"machine_id":machine_id}
+    token = jwt.create_token(ujson.dumps(data),secret_key)
+    real_data = {
+        "data":token
+    }
     url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('PICO_REGISTER_API','')}"
-    response:Response = requests.post(url=url,data=ujson.dumps(data))
+    response:Response = requests.post(url=url,json=real_data)
     response.close()
         
     
@@ -34,50 +39,48 @@ def shake_hands():
     response:Response =  requests.get(url=url)
     if not bool(response.json()["data"]):
         ## TODO: remind user register device firstly
+        response.close()
         return
     response.close()
     ## generare keypair by X25519
-    private_key,public_key = keypairs()
+    private_key,public_key = x25519.generate_keypair()
     #get secret key
     secret_key = config.get("SECRET_KEY","")
     payload = {
         "machine_id":machine_id,
         "pico_public_key":bytes_to_hex(public_key)
     }
-    token = jwt.create_token(payload=ujson.dumps(payload),secret_key=secret_key)
+    token = jwt.create_token(ujson.dumps(payload),secret_key)
     data = {
         "data":token
     }
     # get zero public key
     key_url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('PICO_AUTHORIZATION_API','')}"
-    res:Response = requests.post(url=key_url,data=ujson.dumps(data))
+    res:Response = requests.post(url=key_url,json=data)
     res_data = res.json()
     zero_public_key = res_data["data"]
     res.close()
     #generate aes key
-    CONVERSATION_AES_KEY = generate_aes_key(pico_private_key=private_key,zero_public_key=zero_public_key,secret_key=secret_key)
+    CONVERSATION_AES_KEY = generate_aes_key(private_key,zero_public_key=zero_public_key,secret_key=secret_key)
 
 def get_machine_id()->str:
     return ubinascii.hexlify(machine.unique_id()).decode("utf-8")
 
-def keypairs()->tuple:
-    private_key = os.urandom(32)
-    public_key = x25519.calculate(private_key,x25519.BASE_POINT)
-    return private_key,public_key
+
 
 def bytes_to_hex(b):
     return "".join("{:02x}".format(x) for x in b)
 
 
-def generate_aes_key(pico_private_key:bytes,zero_public_key:str,secret_key:str)->str:
+def generate_aes_key(pico_private_key: bytes, zero_public_key: str, secret_key: str) -> str:
     zero_public_key_bytes = ubinascii.unhexlify(zero_public_key)
-    raw_result = x25519.calculate(pico_private_key,zero_public_key_bytes)
-    salt = b"\x00" * 32
-    prk = hmac.new(key=salt,msg=raw_result,digestmod="sha256").digest()
-    info = secret_key.encode("utf-8") + b"\x01"
-    okm = hmac.new(key=prk,msg=info,digestmod="sha256").digest()
-    aes_bytes = okm[:16]
-    return bytes_to_hex(aes_bytes)
+    raw_result = x25519.calculate(pico_private_key, zero_public_key_bytes)
+    sha256 = uhashlib.sha256()
+    sha256.update(raw_result)
+    sha256.update(secret_key.encode("utf-8"))
+    digest = sha256.digest()
+    aes_bytes = digest[:16]
+    return ubinascii.hexlify(aes_bytes).decode('utf-8')
 
 
 def encrypt_data(payload:dict)->str:

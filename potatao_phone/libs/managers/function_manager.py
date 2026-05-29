@@ -3,7 +3,7 @@ import os
 import struct
 from libs.data_query.ui import get_view
 import uasyncio
-from libs.communication.communication import ws_connect,is_sending,ws_send
+from libs.communication.communication import ws_connect,is_sending,ws_send,disconnect
 from libs.encrpytion.encryption import shake_hands
 
 class FunctionManager:
@@ -324,7 +324,8 @@ class FunctionManager:
         print("[FunctionManager] Recording stopped and saved")
 
         self.mic.deinit()   # ← clean up I2S hardware
-        ## TODO: websocket disconnection
+        ##  websocket disconnection
+        disconnect()
 
     def _make_wav_header(self, data_size: int) -> bytes:
         byte_rate   = self.SAMPLE_RATE * self.NUM_CHANNELS * self.BITS_PER_SAMPLE // 8

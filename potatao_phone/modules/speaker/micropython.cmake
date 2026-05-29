@@ -6,8 +6,53 @@ target_sources(usermod_speaker INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/speaker.c
 )
 
+# -----------------------------------------------------------------------------
+# ✅ PROPER PIO GENERATION FIX
+# Compiles the real audio_i2s.pio into a proper header
+# instead of injecting dummy instructions that break CYW43 Wi-Fi
+# -----------------------------------------------------------------------------
+set(AUDIO_I2S_PIO_SRC "${PICO_EXTRAS_PATH}/src/rp2_common/pico_audio_i2s/audio_i2s.pio")
+set(OUTPUT_PIO_DIR "${CMAKE_BINARY_DIR}/generated/audio_i2s")
+
+if(EXISTS ${AUDIO_I2S_PIO_SRC})
+    file(MAKE_DIRECTORY ${OUTPUT_PIO_DIR})
+
+    # Find pioasm tool (comes with Pico SDK)
+    find_program(PIOASM_TOOL pioasm
+        HINTS
+            ${PICO_SDK_PATH}/tools/pioasm
+            ${CMAKE_BINARY_DIR}/pioasm
+            ${CMAKE_BINARY_DIR}
+        REQUIRED
+    )
+
+    message(STATUS "Potatao: Found pioasm at ${PIOASM_TOOL}")
+    message(STATUS "Potatao: Compiling real audio_i2s.pio → audio_i2s.pio.h")
+
+    # Run pioasm at configure time to generate the real header
+    execute_process(
+        COMMAND ${PIOASM_TOOL} ${AUDIO_I2S_PIO_SRC} ${OUTPUT_PIO_DIR}/audio_i2s.pio.h
+        RESULT_VARIABLE PIOASM_RESULT
+        OUTPUT_VARIABLE PIOASM_OUTPUT
+        ERROR_VARIABLE  PIOASM_ERROR
+    )
+
+    if(NOT PIOASM_RESULT EQUAL 0)
+        message(FATAL_ERROR "pioasm failed to compile audio_i2s.pio:\n${PIOASM_ERROR}")
+    else()
+        message(STATUS "Potatao: audio_i2s.pio.h generated successfully ✅")
+    endif()
+
+    # Expose the generated header to the speaker module and usermod
+    target_include_directories(usermod_speaker INTERFACE ${OUTPUT_PIO_DIR})
+    target_include_directories(usermod INTERFACE ${OUTPUT_PIO_DIR})
+
+else()
+    message(FATAL_ERROR "Could not find audio_i2s.pio at: ${AUDIO_I2S_PIO_SRC}")
+endif()
+
 # Link hardware libraries
-target_link_libraries(usermod_speaker INTERFACE 
+target_link_libraries(usermod_speaker INTERFACE
     pico_audio
     pico_audio_i2s
     hardware_pio
@@ -15,63 +60,3 @@ target_link_libraries(usermod_speaker INTERFACE
 
 # Connect back into the core user module assembly pipelines
 target_link_libraries(usermod INTERFACE usermod_speaker)
-
-# -----------------------------------------------------------------------------
-# 🛠️ THE DEFINITIVE PIO GENERATION FIX
-# -----------------------------------------------------------------------------
-
-set(AUDIO_I2S_PIO_SRC "${PICO_EXTRAS_PATH}/src/rp2_common/pico_audio_i2s/audio_i2s.pio")
-set(OUTPUT_PIO_DIR "${CMAKE_BINARY_DIR}/pico_extras/src/rp2_common/pico_audio_i2s")
-
-if(EXISTS ${AUDIO_I2S_PIO_SRC})
-    file(MAKE_DIRECTORY ${OUTPUT_PIO_DIR})
-
-    # Pull the directory into the global search path immediately
-    target_include_directories(usermod INTERFACE ${OUTPUT_PIO_DIR})
-
-    message(STATUS "Potatao Pre-build: Generating deterministic audio_i2s.pio.h header...")
-
-    # We build the complete, functional header mapping right here during configuration phase.
-    # This completely satisfies the compiler and bypasses the parallel build race condition.
-    execute_process(
-        COMMAND python3 -c "
-import re
-
-# Minimal representation of instructions to satisfy compiler initialization arrays
-dummy_instrs = '0xe080, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000'
-
-with open('${OUTPUT_PIO_DIR}/audio_i2s.pio.h', 'w') as f:
-    f.write('// Auto-generated deterministic header to bypass Pico build race conditions\\n')
-    f.write('#pragma once\\n\\n')
-    f.write('#include \"hardware/pio.h\"\\n\\n')
-    f.write('static const uint16_t audio_i2s_instructions[] = { ' + dummy_instrs + ' };\\n\\n')
-    f.write('static const struct pio_program audio_i2s_program = {\\n')
-    f.write('    .instructions = audio_i2s_instructions,\\n')
-    f.write('    .length = 8,\\n')
-    f.write('    .origin = -1,\\n')
-    f.write('};\\n\\n')
-    f.write('static inline pio_sm_config audio_i2s_program_get_default_config(uint offset) {\\n')
-    f.write('    pio_sm_config c = pio_get_default_sm_config();\\n')
-    f.write('    sm_config_set_wrap(&c, offset + 0, offset + 7);\\n')
-    f.write('    return c;\\n')
-    f.write('}\\n\\n')
-    f.write('static inline void audio_i2s_program_init(PIO pio, uint sm, uint offset, uint data_pin, uint clock_pin_base) {\\n')
-    f.write('    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, true);\\n')
-    f.write('    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin_base, 2, true);\\n')
-    f.write('    pio_gpio_init(pio, data_pin);\\n')
-    f.write('    pio_gpio_init(pio, clock_pin_base);\\n')
-    f.write('    pio_gpio_init(pio, clock_pin_base + 1);\\n')
-    f.write('    pio_sm_config c = audio_i2s_program_get_default_config(offset);\\n')
-    f.write('    sm_config_set_out_pins(&c, data_pin, 1);\\n')
-    f.write('    sm_config_set_sideset_pins(&c, clock_pin_base);\\n')
-    f.write('    sm_config_set_out_shift(&c, false, true, 32);\\n')
-    f.write('    sm_config_set_clkdiv(&c, 1.0f);\\n')
-    f.write('    pio_sm_init(pio, sm, offset, &c);\\n')
-    f.write('    pio_sm_set_enabled(pio, sm, true);\\n')
-    f.write('}\\n')
-"
-    )
-
-else()
-    message(FATAL_ERROR "Could not find audio_i2s.pio at: ${AUDIO_I2S_PIO_SRC}")
-endif()

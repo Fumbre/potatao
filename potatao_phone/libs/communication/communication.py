@@ -1,8 +1,9 @@
-import ws
+from libs.ws.ws import AsyncWebsocketClient
 from libs.conf.env import load_env
 from libs.encrpytion.encryption import encrypt_data,decrypt_data,get_machine_id
+import requests
 
-client = ws.AsyncWebsocketClient()
+client = AsyncWebsocketClient()
 config = load_env()
 is_sending = False
 
@@ -28,5 +29,8 @@ async def ws_send(data:dict):
         is_sending = False
 
 
-# async def ws_receive()->dict:
-#             ...
+def disconnect():
+    machine_id = get_machine_id()
+    client.close()
+    disconnect_url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('pico_WS_DISCONNECT_API','')}/{machine_id}"
+    requests.get(url=disconnect_url)

@@ -15,6 +15,8 @@ from libs.managers.event_manager import EventManager
 from libs.managers.state_manager import StateManager
 from libs.managers.function_manager import FunctionManager
 
+from libs.encrpytion.encryption import register
+
 import utime
 import os
 import gc
@@ -59,7 +61,7 @@ config = load_env()
 
 # setup Wifi
 wifi = Wifi(config.get("SSID", "") , config.get("WIFI_PASSWORD", ""))
-
+wifi.connect()
 
 #setup Mic
 mic = Mic(0, PIN_MIC_SCK, PIN_MIC_WS, PIN_MIC_SD)
@@ -105,6 +107,9 @@ state_manager.function_manager = function_manager
 # Pre Render setup
 view_list = get_view(db, 0)
 state_manager.push_stack(view_list)
+
+# ------------  reigester pico device to zero ------
+register()
 
 # ── MAIN LOOP ────────────────────────────────────────────
 
