@@ -2,9 +2,15 @@
 import os
 import struct
 from libs.data_query.ui import get_view
+from libs.managers.state_manager import StateManager
 import uasyncio
-from libs.communication.communication import ws_connect,is_sending,ws_send,disconnect
+from libs.communication.communication import ws_connect,ws_send,disconnect
 from libs.encrpytion.encryption import shake_hands
+from libs.mic.mic import Mic
+from libs.nrf24.nrf24l01 import NRF24L01
+from libs.wifi.wifi import Wifi
+from libs.speaker.speaker import Speaker
+
 
 class FunctionManager:
     # WAV constants
@@ -12,8 +18,12 @@ class FunctionManager:
     NUM_CHANNELS   = 1
     BITS_PER_SAMPLE = 16
     MIC_HEADER_SIZE = 8   # seq_num (4B) + timestamp_ms (4B)
+    
+    
 
-    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None, speaker=None):
+    def __init__(self, state_manager:StateManager, db, wifi:Wifi=None, nrf:NRF24L01=None, mic:Mic=None, sd=None, speaker:Speaker=None):
+              
+        self.out_buf = bytearray(1024)  # preallocated, no GC pressure   
         self.state_manager = state_manager
         self.db = db
         self.wifi = wifi
@@ -57,6 +67,9 @@ class FunctionManager:
             "start_speaker": self._start_speaker,
             "stop_speaker": self._start_speaker,
         }
+        
+        ## define the data transmitation structure
+        self.data = {}
 
     def execute(self, function_name: str, context: dict) -> bool:
         """
@@ -314,29 +327,30 @@ class FunctionManager:
         try:
             uasyncio.run(ws_connect())
         except:
-            print("build websocket channel failed!")    
+            print("build websocket channel failed!")   
+            
+     
 
     def write_chunk(self):
         """write one mic chunk — called every loop while recording"""
         if self.mic is None or self._rec_file is None:
             return
-
-        chunk = self.mic.process()
-        if chunk is None:
+        length = self.mic.process()
+        if length <= 0:
             return
-
+        chunk =memoryview(self.out_buf)[:length]
+        
         self._rec_file.write(chunk)
-        self._rec_byte_count += len(chunk)
+        self._rec_byte_count += length
         
         #create ws_send asyncio task
-        if not is_sending:
-            data = {
-                "data":chunk,
-                "target_machine_id":"test",
-                "is_end":False
-            }
-            uasyncio.create_task(ws_send(data=data))
-
+        if not self.state_manager.is_sending:
+            self.state_manager.is_sending = True
+            self.data["data"] = bytes(chunk)
+            self.data["target_machine_id"] = "test"
+            self.data["is_end"] = False
+            uasyncio.create_task(ws_send(data=self.data,state = self.state_manager))
+        
 
     def stop_recording(self):
         """fix WAV header and close file — called when REC released"""

@@ -38,8 +38,8 @@ class Mic:
     def process(self):
         num_read = self.mic_I2S.readinto(self.buf)
         if num_read > 0:
-            bytes_written = mic_dsp.convert(self.mv[:num_read], self.out_buf, self.GAIN)
-            return self.out_buf[:bytes_written]
+            return  mic_dsp.convert(self.mv[:num_read], self.out_buf, self.GAIN)
+            # return self.out_buf[:bytes_written]
 
 
 

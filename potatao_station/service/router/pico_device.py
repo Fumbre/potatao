@@ -60,7 +60,7 @@ async def pico_authentication(pico_auth:PicoDeviceRequest)->BaseResponse:
     return BaseResponse.success(data=public_key)
 
 
-@router.get("/disconnect")
+@router.get("/disconnect/{machine_id}")
 async def disconnect(machine_id:str)->BaseResponse:
     # check whether pico has already registered into zero
     if not RedisClient.sexist("pico_device", machine_id):

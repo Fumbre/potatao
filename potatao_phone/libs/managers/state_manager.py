@@ -9,6 +9,7 @@ class StateManager:
         self.is_nrf_sending = False
         self.is_nrf_receiving = False
         self.is_playing = False
+        self.is_sending = False
         self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
         self.function_manager = function_manager
 

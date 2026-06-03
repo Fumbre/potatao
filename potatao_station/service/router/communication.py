@@ -29,22 +29,32 @@ manager = WebsocketManager()
 
 
 @router.websocket("/ws/{machine_id}")
-async def websocket_endpoint(machine_id:str,ws:WebSocket):
-    await manager.connect(machine_id,ws)
-    while True:
-        msg = await ws.receive_text()
-        ## get aes from redis
-        aes_key = str(RedisClient.get(f"pico_data_key:{machine_id}"))
-        ## decrypt data
-        data:CommunicationData = AESUtil.decrypyt(aes_key,msg)
-        ## get current s3 session id from redis
-        session_id = RedisClient.get(f"s3_session_id:{machine_id}")
-        ## upload audio bytes to Miniobo
-        S3Util.upload_parts(session_id,data=data["data"])
-        ## end the conversation
-        if data["is_end"]:
-            await manager.disconnect(machine_id)
-            await manager.disconnect(data["target_machine_id"])
-            break
+async def websocket_endpoint(machine_id: str, ws: WebSocket):
+    await manager.connect(machine_id, ws)
+    try:
+        while True:
+            msg = await ws.receive_text()
+
+            aes_key = RedisClient.get(f"pico_data_key:{machine_id}")
+            if not aes_key:
+                break
+
+            data: CommunicationData = AESUtil.decrypyt(str(aes_key), msg)
+
+            session_id = RedisClient.get(f"s3_session_id:{machine_id}")
+            if session_id:
+                S3Util.upload_parts(session_id, data=data["data"])
+
+            if data.get("is_end"):
+                target_id = data.get("target_machine_id")
+                await manager.disconnect(machine_id)
+                if target_id:
+                    await manager.disconnect(target_id)
+                break
+
+    except Exception as e:
+        print(f"WebSocket error for {machine_id}: {e}")
+    finally:
+        await manager.disconnect(machine_id)
 
     

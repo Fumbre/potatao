@@ -1,11 +1,13 @@
 from libs.ws.ws import AsyncWebsocketClient
 from libs.conf.env import load_env
 from libs.encrpytion.encryption import encrypt_data,decrypt_data,get_machine_id
+from libs.managers.state_manager import StateManager
 import requests
+
 
 client = AsyncWebsocketClient()
 config = load_env()
-is_sending = False
+
 
 async def ws_connect():
    machine_id = get_machine_id()
@@ -16,21 +18,17 @@ async def ws_connect():
        
 
 
-async def ws_send(data:dict):
-    global is_sending
-    if is_sending:
-        return   
-    is_sending = True   
+async def ws_send(data:dict,state:StateManager):  
     try:
         if client and client._open:
            text =  encrypt_data(data)
            await client.send(text)
     finally:
-        is_sending = False
+        state.is_sending = False
 
-
-def disconnect():
+async def disconnect():
     machine_id = get_machine_id()
-    client.close()
+    if client and client._open:
+        await client.close()        
     disconnect_url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('pico_WS_DISCONNECT_API','')}/{machine_id}"
     requests.get(url=disconnect_url)

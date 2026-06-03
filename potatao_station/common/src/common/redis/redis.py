@@ -24,7 +24,7 @@ class RedisClient:
     
     @classmethod
     def set(cls,key:str,value:Any,ex:Optional[int] = None)->bool:
-        return bool(cls._client.set(key=key,value=value,ex=ex))
+        return bool(cls._client.set(name=key,value=value,ex=ex))
     
     @classmethod
     def get(cls,key:str)->Any:
@@ -32,7 +32,7 @@ class RedisClient:
     
     @classmethod
     def delete(cls,*key:str)->int:
-        return cls._client.delete(names = key)
+        return cls._client.delete(*key)
 
 
     @classmethod

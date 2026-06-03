@@ -11,6 +11,7 @@ from service.config.config import settings
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
+    print(settings.s3.secret_key)
     ## init db
     DB.init(settings.db.path,settings.db.password)
     ##init redis

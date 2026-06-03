@@ -2,10 +2,11 @@
 from machine import Pin
 from libs.conf.pins import PIN_BTN_AGREE, PIN_BTN_CANCEL, PIN_BTN_HOME, PIN_ENC_A, PIN_ENC_B, PIN_BTN_REC
 from libs.debounce.encoder_debounce import EncoderDebounce
+from libs.managers.state_manager import StateManager
 
 
 class EventManager:
-    def __init__(self, state_manager):
+    def __init__(self, state_manager:StateManager):
         # Pass StateManager as a dependency 
         self.state_manager = state_manager
         
