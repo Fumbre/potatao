@@ -37,7 +37,12 @@ async def audio_endpoint(websocket: WebSocket):
         while True:
             # Receive message from Pi Zero
             # Expected format: [1 byte: lang_len][lang_len bytes: language][rest: audio]
-            data = await websocket.receive_bytes()
+
+            # TODO
+            # it should receive .json like:
+            # {data: "bytes.array", translate_to: ["French", "Chineese"] org_language: "Portugal"}
+            # and it will be encrepted so we need to decrept this (do not consider this right now, Sunny will handle it)
+            data = await websocket.receive_bytes() 
  
             if len(data) < 2:
                 print("[Server] Message too short, ignoring.")

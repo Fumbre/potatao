@@ -78,3 +78,10 @@ brew install uv
 install project libs
 
 - uv sync --all-packages
+
+
+## Potatao_llm
+
+The local llm system that handle multi language translation
+potatao_station request 
+send those data to potatao_station
