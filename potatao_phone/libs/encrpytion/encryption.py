@@ -62,6 +62,7 @@ def shake_hands():
     res.close()
     #generate aes key
     CONVERSATION_AES_KEY = generate_aes_key(private_key,zero_public_key=zero_public_key,secret_key=secret_key)
+    print(CONVERSATION_AES_KEY)
 
 def get_machine_id()->str:
     return ubinascii.hexlify(machine.unique_id()).decode("utf-8")
@@ -83,19 +84,18 @@ def generate_aes_key(pico_private_key: bytes, zero_public_key: str, secret_key: 
     return ubinascii.hexlify(aes_bytes).decode('utf-8')
 
 
-def encrypt_data(payload:dict)->str:
+def encrypt_data(payload:bytes)->bytes:
     global CONVERSATION_AES_KEY
+    if not CONVERSATION_AES_KEY: return b''
     aes_key = ubinascii.unhexlify(CONVERSATION_AES_KEY)
-    data_str = ujson.dumps(payload)
-    data_binary = data_str.encode("utf-8")
-    pad_len = 16 - (len(data_binary) % 16)
-    final_data =  data_binary + bytes([pad_len] * pad_len)
+    pad_len = 16 - (len(payload) % 16)
+    padded_data = payload + bytes([pad_len] * pad_len)
+    
     iv = os.urandom(16)
-    aes_cipher = cryptolib.aes(aes_key,2,iv)
-    cipher_text = aes_cipher.encrypt(final_data)
-    data_package = iv + cipher_text
-    hex_str = ubinascii.hexlify(data_package).decode("utf-8")
-    return hex_str
+    aes_cipher = cryptolib.aes(aes_key, 2, iv)
+    cipher_text = aes_cipher.encrypt(padded_data)
+    
+    return iv + cipher_text
 
 
 def decrypt_data(data:str)->dict:

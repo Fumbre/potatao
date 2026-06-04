@@ -12,6 +12,7 @@ from common.redis.redis import RedisClient
 from common.response.base_response import BaseResponse
 from model.pico_device_model import PicoDevice
 from request.pico_device_request import PicoDeviceRequest, PicoAuthentication
+from router.communication import manager
 
 router = APIRouter(prefix="/pico/device")
 
@@ -63,6 +64,7 @@ async def pico_authentication(pico_auth:PicoDeviceRequest)->BaseResponse:
 @router.get("/disconnect/{machine_id}")
 async def disconnect(machine_id:str)->BaseResponse:
     # check whether pico has already registered into zero
+    await manager.disconnect(machine_id)
     if not RedisClient.sexist("pico_device", machine_id):
         raise BusinessException("This machine does not register, please register firstly!", 500)
     ## delete aes key from Redis

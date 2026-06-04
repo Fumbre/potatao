@@ -1,3 +1,4 @@
+import hashlib
 import threading
 from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -33,11 +34,8 @@ class X25519MUtil:
         pico_pub_key_obj = x25519.X25519PublicKey.from_public_bytes(pico_public_key_byte)
         raw_result = private_key.exchange(pico_pub_key_obj)
         info_context = cls._secret_key.encode("utf-8")
-        aes_bytes = HKDF(
-            algorithm=hashes.SHA256(),
-            length=16,
-            salt=None,
-            info=info_context,
-        ).derive(raw_result)
-        
-        return aes_bytes.hex()
+        sha256 = hashlib.sha256()
+        sha256.update(raw_result)
+        sha256.update(info_context)
+        digest = sha256.digest()
+        return digest[:16].hex()

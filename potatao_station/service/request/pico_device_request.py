@@ -13,6 +13,6 @@ class PicoAuthentication(TypedDict):
 
 
 class CommunicationData(TypedDict):
-    data:bytes
+    data:str
     target_machine_id: str
     is_end: bool

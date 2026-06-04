@@ -1,8 +1,8 @@
-import json
 from typing import Dict
-
+from asyncio import Queue
 from fastapi import APIRouter,WebSocket
-
+from starlette.concurrency import run_in_threadpool
+import asyncio
 from common.aws3.s3 import S3Util
 from common.encrptytion.aes.aes import AESUtil
 from common.redis.redis import RedisClient
@@ -31,30 +31,38 @@ manager = WebsocketManager()
 @router.websocket("/ws/{machine_id}")
 async def websocket_endpoint(machine_id: str, ws: WebSocket):
     await manager.connect(machine_id, ws)
+    audio_queue = Queue()
+    session_id = RedisClient.get(f"s3_session_id:{machine_id}")
+    aes_key = RedisClient.get(f"pico_data_key:{machine_id}")
+    worker_task = asyncio.create_task(s3_upload_worker(session_id, audio_queue))
     try:
         while True:
-            msg = await ws.receive_text()
-
-            aes_key = RedisClient.get(f"pico_data_key:{machine_id}")
-            if not aes_key:
-                break
-
-            data: CommunicationData = AESUtil.decrypyt(str(aes_key), msg)
-
-            session_id = RedisClient.get(f"s3_session_id:{machine_id}")
-            if session_id:
-                S3Util.upload_parts(session_id, data=data["data"])
-
-            if data.get("is_end"):
-                target_id = data.get("target_machine_id")
-                await manager.disconnect(machine_id)
-                if target_id:
-                    await manager.disconnect(target_id)
-                break
-
+            raw_data = await ws.receive_bytes()
+            decrypted_data = AESUtil.decrypt_bytes(aes_key, raw_data)
+            audio_data = decrypted_data[9:]
+            await audio_queue.put(audio_data)
     except Exception as e:
         print(f"WebSocket error for {machine_id}: {e}")
     finally:
+        await audio_queue.put(None)
+        await worker_task
         await manager.disconnect(machine_id)
+
+
+
+async def s3_upload_worker(session_id:str, queue:Queue):
+    try:
+        while True:
+            data = await queue.get()
+            if data is None:
+                break
+            try:
+                await run_in_threadpool(S3Util.upload_parts, session_id, data=data)
+            except Exception as e:
+                print(f"!!! S3 Upload Error: {e}")
+            queue.task_done()
+    except Exception as e:
+        print(f"!!! Worker Task Crashed: {e}")
+
 
     

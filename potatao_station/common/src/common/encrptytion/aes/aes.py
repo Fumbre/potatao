@@ -51,3 +51,17 @@ class AESUtil:
         unpadder = padding.PKCS7(128).unpadder()
         decrypted_bytes = unpadder.update(padded_data) + unpadder.finalize()
         return json.loads(decrypted_bytes.decode('utf-8'))
+
+    @classmethod
+    def decrypt_bytes(cls,key:str,data:bytes)->bytes:
+        iv = data[:16]
+        cipher_text = data[16:]
+        key_bytes = bytes.fromhex(key)
+        cipher = Cipher(algorithm=algorithms.AES(key_bytes), mode=modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded_data = decryptor.update(cipher_text) + decryptor.finalize()
+
+        unpadder = padding.PKCS7(128).unpadder()
+        decrypted_bytes = unpadder.update(padded_data) + unpadder.finalize()
+        return decrypted_bytes
+

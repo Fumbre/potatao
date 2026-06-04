@@ -24,6 +24,10 @@ import gc
 
 from machine import Pin, SPI
 
+import uasyncio
+
+loop = uasyncio.get_event_loop()
+
 gc.collect()
 
 # TODO: 
@@ -123,6 +127,11 @@ register()
 # ── MAIN LOOP ────────────────────────────────────────────
 
 
+async def _yield():
+    await uasyncio.sleep(0)
+
+loop.run_until_complete(_yield())
+
 try:
     while True:
         if state_manager.is_recording:
@@ -135,7 +144,9 @@ try:
              function_manager._play_speaker()
         else:
             utime.sleep_ms(15)
-
+        
+        loop.run_until_complete(_yield())
+            
         if event_manager.process():
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:

@@ -4,12 +4,42 @@ import struct
 from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
+import gc
+import struct
 from libs.communication.communication import ws_connect,ws_send,disconnect
 from libs.encrpytion.encryption import shake_hands
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
+from libs.encrpytion.encryption import encrypt_data
+
+
+
+HEADER_FMT = '<B8s'
+
+class SimpleQueue:
+    def __init__(self, maxsize):
+        self.maxsize = maxsize
+        self.items = []
+        self.evt = uasyncio.Event()
+
+    async def get(self):
+        while not self.items:
+            await self.evt.wait()
+        return self.items.pop(0)
+
+    def put_nowait(self, item):
+        if len(self.items) < self.maxsize:
+            self.items.append(item)
+            self.evt.set()
+        
+    def full(self):
+        return len(self.items) >= self.maxsize
+    
+    def task_done(self):
+        if not self.items:
+            self.evt.clear()
 
 
 class FunctionManager:
@@ -70,6 +100,9 @@ class FunctionManager:
         
         ## define the data transmitation structure
         self.data = {}
+        ## define async task queue
+        self.queue = SimpleQueue(maxsize=20)
+        self.network_task = None
 
     def execute(self, function_name: str, context: dict) -> bool:
         """
@@ -310,67 +343,71 @@ class FunctionManager:
 
     def start_recording(self):
         """open file once — called when REC pressed"""
-        folder = "/sd/recordings"
-        self._ensure_folder(folder)
+        # folder = "/sd/recordings"
+        # self._ensure_folder(folder)
 
-        index = self._get_next_index(folder)
-        path = f"{folder}/record_{index}.wav"
-        self._rec_file       = open(path, "wb")   # SD ops while I2S is idle
-        self._rec_byte_count = 0
-        self._rec_file.write(bytearray(44))        # placeholder WAV header
+        # index = self._get_next_index(folder)
+        # path = f"{folder}/record_{index}.wav"
+        # self._rec_file       = open(path, "wb")   # SD ops while I2S is idle
+        # self._rec_byte_count = 0
+        # self._rec_file.write(bytearray(44))        # placeholder WAV header
 
         self.mic.init()                            # start I2S only after SD is done
-        print(f"[FunctionManager] Recording started → {path}")
+        # print(f"[FunctionManager] Recording started → {path}")
         # exchange encryption key with zero
         shake_hands()
         # open websocket connection
-        try:
-            uasyncio.run(ws_connect())
-        except:
-            print("build websocket channel failed!")   
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(ws_connect())
+        self.network_task = loop.create_task(ws_send(self.queue))         
+                
+              
             
      
 
     def write_chunk(self):
         """write one mic chunk — called every loop while recording"""
-        if self.mic is None or self._rec_file is None:
+        # if self.mic is None or self._rec_file is None:
+        #     return
+        if self.mic is None:
             return
-        length = self.mic.process()
-        if length <= 0:
+        raw_slice = self.mic.process()
+        if not raw_slice or len(raw_slice) <= 0:
             return
-        chunk =memoryview(self.out_buf)[:length]
+        chunk = bytes(raw_slice)
         
-        self._rec_file.write(chunk)
-        self._rec_byte_count += length
-        
+        # self._rec_file.write(chunk)
+        # self._rec_byte_count += length
         #create ws_send asyncio task
-        if not self.state_manager.is_sending:
-            self.state_manager.is_sending = True
-            self.data["data"] = bytes(chunk)
-            self.data["target_machine_id"] = "test"
-            self.data["is_end"] = False
-            uasyncio.create_task(ws_send(data=self.data,state = self.state_manager))
+        if not self.queue.full():
+            packet = struct.pack(HEADER_FMT,0,b'test') + chunk
+            encrypted_data = encrypt_data(packet)
+            self.queue.put_nowait(encrypted_data)
         
 
     def stop_recording(self):
         """fix WAV header and close file — called when REC released"""
-        if self._rec_file is None:
-            return
+        # if self._rec_file is None:
+        #     return
 
         self.mic.deinit()                          # stop I2S before SD ops
 
-        self._rec_file.seek(0)
-        self._rec_file.write(
-            self._make_wav_header(self._rec_byte_count)
-        )
-        self._rec_file.close()
-        self._rec_file       = None
-        self._rec_byte_count = 0
+        # self._rec_file.seek(0)
+        # self._rec_file.write(
+        #     self._make_wav_header(self._rec_byte_count)
+        # )
+        # self._rec_file.close()
+        # self._rec_file = None
+        # self._rec_byte_count = 0
         print("[FunctionManager] Recording stopped and saved")
 
         self.mic.deinit()   # ← clean up I2S hardware
+        ##stop async task
+        self.network_task.cancel()
+        self.network_task = None
         ##  websocket disconnection
-        disconnect()
+        
+        uasyncio.get_event_loop().run_until_complete(disconnect())
 
     def _make_wav_header(self, data_size: int) -> bytes:
         byte_rate   = self.SAMPLE_RATE * self.NUM_CHANNELS * self.BITS_PER_SAMPLE // 8
