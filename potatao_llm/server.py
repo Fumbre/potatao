@@ -1,5 +1,8 @@
 '''
-FastAPI + WebSocket: entry point
+This file is the entry point of the potatao_llm server.
+It receives audio and the target language from the Pi Zero via WebSocket,
+runs it through the transcription, translation and TTS pipeline,
+and sends the translated audio back.
 '''
 # This is necessary to use 'await', which allows you to wait for slow 
 # operations (network, processing) without freezing the server
@@ -23,7 +26,7 @@ translator = OllamaTranslator(model="mistral")
 tts = PiperTTS()
 
 # WebSocket endpoint 
-# Pi Zero will connect to ws://PC_IP:8000/audio
+# Pi Zero will connect to ws://IP_OF_MY_MAC:8000/audio
 @app.websocket("/audio")
 async def audio_endpoint(websocket: WebSocket):
     """
