@@ -30,7 +30,7 @@ gc.collect()
 
 
 # SD setup
-spi = SPI(1, baudrate=10_000_000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
+spi = SPI(1, baudrate=1320000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
 sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
@@ -52,7 +52,6 @@ db = usqlite.connect("/sd/potatao.db")
 # create db structure if not exitst
 if not db_exist(db):
     db_create(db)
-
 
 # conf
 config = load_env()
