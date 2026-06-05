@@ -2,6 +2,7 @@
 import os
 import struct
 from libs.data_query.ui import get_view
+import utime 
 
 class FunctionManager:
     # WAV constants
@@ -151,40 +152,64 @@ class FunctionManager:
         folder = "/sd/recordings"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = f"{folder}/record_{index}.wav"
+        path  = "/sd/received.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
         self._rcv_chunk_index = 0
 
-        # Write blank header placeholder — filled in on stop
-        self._rcv_file.write(bytearray(44))
-
+    
+        self.nrf.set_power_speed(3, 2)
         self.nrf.open_rx_pipe(0, self.address)
         self.nrf.start_listening()
+        print("RX READY")
         self.state_manager.is_nrf_receiving = True
         print(f"[NRF] Receiving → {path}")
         return True
 
     def _receive_nrf_chunk(self):
-        """call every loop while is_nrf_receiving is True"""
-        if self.nrf is None or self._rcv_file is None:
-            return
+        last_seq = -1
+        while True:
+            last_packet = utime.ticks_ms()
+            while self.nrf.any():
+                try:
 
-        #nado podumat' esli nikto ne otpravlyat////if nothing received for a long time what should we do
-        if not self.nrf.any():           # nothing arrived yet 
-            return
+                    packet = self.nrf.recv()
 
-        chunk = self.nrf.recv()
+                    last_packet = utime.ticks_ms()
 
-        # Check for end marker in first 4 bytes
-        if chunk[:4] == self.nrf_endmarker:
-            self._stop_nrf_receive()
-            return
+                    seq = struct.unpack("<I", packet[:4])[0]
 
-        self._rcv_file.write(chunk)
-        self._rcv_byte_count  += len(chunk)
-        self._rcv_chunk_index += 1
+                    data = packet[4:]
+
+                    # packet loss detect
+                    if last_seq != -1:
+
+                        if seq != last_seq + 1:
+
+                            lost = seq - last_seq - 1
+
+                            print("LOST:", lost)
+
+                    last_seq = seq
+
+                    self._rcv_file.write(data)
+
+                    print("RX", seq)
+
+                except Exception as e:
+
+                    print("RX ERROR:", e)
+
+                    self.nrf.flush_rx()
+
+            # stop after silence
+            if utime.ticks_diff(
+                utime.ticks_ms(),
+                last_packet
+            ) > 3000:
+                self._stop_nrf_receive()
+                break
 
 
     def _stop_nrf_receive(self):
@@ -197,10 +222,6 @@ class FunctionManager:
 
         # Rewind and write correct WAV header
         # Use same params your mic records at (e.g. 8000 Hz, mono, 16-bit)
-        self._rcv_file.seek(0)
-        self._rcv_file.write(
-            self._make_wav_header(self._rcv_byte_count)
-        )
         self._rcv_file.close()
         self._rcv_file        = None
         print(f"[NRF] Received {self._rcv_chunk_index} chunks, {self._rcv_byte_count} bytes saved")

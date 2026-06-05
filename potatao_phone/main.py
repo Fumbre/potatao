@@ -71,7 +71,7 @@ ce = Pin(PIN_NRF_CE, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=1000000,
+    baudrate=8_000_000,
     polarity=0,
     phase=0,
     sck=Pin(PIN_NRF_SCK),
