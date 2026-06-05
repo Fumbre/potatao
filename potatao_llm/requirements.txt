@@ -1,1 +1,15 @@
-# dependencies Python
+# dependencies Python: Server 
+fastapi
+uvicorn[standard]
+websockets
+
+# Transcription
+faster-whisper          # local speech to text (Faster-Whisper)
+openai                  # cloud fallback: OpenAI Whisper API + GPT + TTS
+
+# Translation 
+ollama                  # local LLM via Ollama
+
+# TTS 
+piper-tts               # local TTS: lightweight, works on Raspberry Pi
+elevenlabs              # cloud TTS: best voice quality

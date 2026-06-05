@@ -76,9 +76,16 @@ choose_output_dir() {
     fi
 }
 
+# ─────────────────────────────────────────
+# CONFIGURATION — change this to switch boards
+# Options:
+#   pico_w   → RPI_PICO_W
+#   pico2_w  → RPI_PICO2_W
 BOARD_MODEL="${BOARD_MODEL:-pico2_w}"
-BUILD_TYPE="${1:-Release}"
+# ─────────────────────────────────────────
 
+
+# Auto-set the uppercase board name from BOARD_MODEL
 if [ "$BOARD_MODEL" = "pico2_w" ]; then
     BOARD_NAME="RPI_PICO2_W"
 elif [ "$BOARD_MODEL" = "pico_w" ]; then
@@ -89,6 +96,9 @@ else
     exit 1
 fi
 
+
+# ─────────────────────────────────────────
+# MODULES — add your own custom module to micropython build
 SDK_PATH="$(abs_path "$SCRIPT_DIR/pico-sdk")"
 PICO_EXTRAS_PATH="$(abs_path "$SCRIPT_DIR/pico-extras")"
 HELLO_MODULE="$(abs_path "$SCRIPT_DIR/modules/hello/micropython.cmake")"
@@ -96,11 +106,10 @@ SQLITE_MODULE="$(abs_path "$SCRIPT_DIR/modules/sqlite/micropython.cmake")"
 SDCARD_MODULE="$(abs_path "$SCRIPT_DIR/modules/sdcard/micropython.cmake")"
 MIC_DSP_MODULE="$(abs_path "$SCRIPT_DIR/modules/mic_dsp/micropython.cmake")"
 SPEAKER_MODULE="$(abs_path "$SCRIPT_DIR/modules/speaker/micropython.cmake")"
-# X25519_MODULE="$(abs_path "$SCRIPT_DIR/modules/x25519/micropython.cmake")"
-# JWT_MODULE="$(abs_path "$SCRIPT_DIR/modules/jwt/micropython.cmake")"    
 
-# MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${SPEAKER_MODULE}${X25519_MODULE};${JWT_MODULE};"
+
 MODULES_PATHS="${HELLO_MODULE};${SQLITE_MODULE};${SDCARD_MODULE};${MIC_DSP_MODULE};${SPEAKER_MODULE};"
+# ─────────────────────────────────────────
 
 RP2_DIR="$SCRIPT_DIR/micropython/ports/rp2"
 OUTPUT_DIR="$(choose_output_dir)"
@@ -111,18 +120,13 @@ select_arm_toolchain
 
 rm -rf "$BUILD_DIR"
 
-export CFLAGS="-Wno-stringop-overflow -Wno-stringop-overread -Wno-maybe-uninitialized"
-export CXXFLAGS="-Wno-stringop-overflow -Wno-stringop-overread -Wno-maybe-uninitialized"
-
 cmake -S "$RP2_DIR" -B "$BUILD_DIR" \
     -DPICO_BOARD="$BOARD_MODEL" \
-    -DPICO_PLATFORM=rp2350 \
     -DBOARD="$BOARD_NAME" \
     -DMICROPY_BOARD="$BOARD_NAME" \
     -DPICO_SDK_POST_LIST_DIRS="${PICO_EXTRAS_PATH}" \
     -DPICO_SDK_PATH="$SDK_PATH" \
-    -DUSER_C_MODULES="$MODULES_PATHS" \
-    -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+    -DUSER_C_MODULES="$MODULES_PATHS"
 
 cmake --build "$BUILD_DIR" --parallel "$(cpu_count)"
 

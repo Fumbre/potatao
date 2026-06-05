@@ -1,6 +1,7 @@
 # libs/managers/function_manager.py
 import os
 import struct
+import gc
 from libs.data_query.ui import get_view
 import utime 
 
@@ -11,13 +12,14 @@ class FunctionManager:
     BITS_PER_SAMPLE = 16
     MIC_HEADER_SIZE = 8   # seq_num (4B) + timestamp_ms (4B)
 
-    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None):
+    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None, speaker=None):
         self.state_manager = state_manager
         self.db = db
         self.wifi = wifi
         self.nrf = nrf
         self.mic = mic
         self.sd = sd
+        self.speaker = speaker
 
         # recording state — file handle lives here between chunks
         self._rec_file       = None
@@ -32,8 +34,12 @@ class FunctionManager:
 
 
         #nrf setup
+        #put it to state manager
         self.address = b"1Node"
         self.nrf_endmarker = b'\xff\xff\xff\xff'  
+
+        #speaker setup
+        self._speaker_file = None
 
         # registry — name -> methods
         self._registry = {
@@ -46,6 +52,9 @@ class FunctionManager:
             "send_data_to_nrf":    self._send_data_to_nrf, 
             "send_nrf_chank": self._send_nrf_chank,
             "stop_nrf_send": self._stop_nrf_send,
+            "play_speaker": self._play_speaker,
+            "start_speaker": self._start_speaker,
+            "stop_speaker": self._stop_speaker,
         }
 
     def execute(self, function_name: str, context: dict) -> bool:
@@ -66,7 +75,7 @@ class FunctionManager:
         """fetch children from db and push to stack"""
 
         parent_id = item["id"]
-        rows = get_view(self.db, parent_id)
+        rows = get_view(self.db, parent_id, "/sd/potatao.db")
 
         if not rows:
             print(f"[FunctionManager] No children for id {parent_id}")
@@ -228,12 +237,57 @@ class FunctionManager:
 
 
 
+    def _start_speaker(self, context: dict):
+        if hasattr(self, '_speaker_file') and self._speaker_file is not None:
+            try:
+                self._speaker_file.close()
+            except:
+                pass
+            self._speaker_file = None
+
+        gc.collect()
+            
+        self.speaker.init()
+        self.state_manager.is_playing = True
+        path = f"/sd/recordings/{context["name"]}"
+        print(path)
+        self._speaker_file = open(path, "rb")
+        self._speaker_file.read(44)   # skip WAV header
+
+    def _play_speaker(self):
+        num_read = self._speaker_file.readinto(self.speaker.buf)        
+        if num_read == 0:
+            self._stop_speaker()
+            return
+            
+        # Pass a memoryview slice of the preallocated buffer
+        self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
+
+
+    def _stop_speaker(self):
+        self.state_manager.is_playing = False
+        self.speaker.deinit()
+
+        if self._speaker_file is not None:
+            try:
+                self._speaker_file.close()
+            except:
+                pass
+            self._speaker_file = None
+            print("[Speaker] File handles closed cleanly")
+        
+        try:
+            os.sync()
+        except:
+            pass
+
+
 
     def _write_sd(self, context: dict) -> bool:
         self.state_manager.rec_destination = "sd"
         return True
 
-    def _get_sdcard_data(self, context: dict, function_name: str = 'play_recording') -> bool:
+    def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
         folder = "/sd/recordings"
         try:
             names = os.listdir(folder)
@@ -284,11 +338,14 @@ class FunctionManager:
 
     def start_recording(self):
         """open file once — called when REC pressed"""
+        gc.collect()
+
         folder = "/sd/recordings"
         self._ensure_folder(folder)
 
         index = self._get_next_index(folder)
         path = f"{folder}/record_{index}.wav"
+
         self._rec_file       = open(path, "wb")   # SD ops while I2S is idle
         self._rec_byte_count = 0
         self._rec_file.write(bytearray(44))        # placeholder WAV header
@@ -313,7 +370,7 @@ class FunctionManager:
         """fix WAV header and close file — called when REC released"""
         if self._rec_file is None:
             return
-
+        
         self.mic.deinit()                          # stop I2S before SD ops
 
         self._rec_file.seek(0)
@@ -324,6 +381,11 @@ class FunctionManager:
         self._rec_file       = None
         self._rec_byte_count = 0
         print("[FunctionManager] Recording stopped and saved")
+        try:
+            os.sync()
+        except:
+            pass
+
 
 
     def _make_wav_header(self, data_size: int) -> bytes:
@@ -355,3 +417,5 @@ class FunctionManager:
                 os.mkdir(current)
             except OSError:
                 pass   # already exists
+
+        

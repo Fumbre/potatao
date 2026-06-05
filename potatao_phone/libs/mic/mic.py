@@ -31,7 +31,7 @@ class Mic:
             bits=32,
             format=I2S.MONO,
             rate=24000,
-            ibuf=8192
+            ibuf=16384 # 8192
         )
 
     # mic.process() returns ONLY raw audio
@@ -39,8 +39,9 @@ class Mic:
         num_read = self.mic_I2S.readinto(self.buf)
         if num_read > 0:
             bytes_written = mic_dsp.convert(self.mv[:num_read], self.out_buf, self.GAIN)
-            return self.out_buf[:bytes_written]
-
+            return memoryview(self.out_buf)[:bytes_written]
+        return None
+    
     # put it somewhere with wifi related
     # wifi sender adds header when needed
     # def send_wifi(chunk, seq_num, record_start_ms):

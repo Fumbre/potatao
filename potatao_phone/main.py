@@ -9,6 +9,7 @@ from libs.data_query.ui import get_view
 from libs.db.db import db_create, db_exist
 from libs.wifi.wifi import Wifi
 from libs.mic.mic import Mic
+from libs.speaker.speaker import Speaker
 from libs.nrf24.nrf24l01 import NRF24L01
 
 from libs.managers.event_manager import EventManager
@@ -29,7 +30,7 @@ gc.collect()
 
 
 # SD setup
-spi = SPI(1, baudrate=10_000_000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
+spi = SPI(1, baudrate=1320000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
 sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
@@ -51,7 +52,6 @@ db = usqlite.connect("/sd/potatao.db")
 # create db structure if not exitst
 if not db_exist(db):
     db_create(db)
-
 
 # conf
 config = load_env()
@@ -87,6 +87,13 @@ nrf = NRF24L01(
     payload_size=16
 )
 
+# Speaker setup
+speaker = Speaker(
+    i2s_id  = 1,                    # 1, cuz mic uses 0
+    sck_pin = PIN_SPEAKER_AMP_SCK,  # GP2
+    ws_pin  = PIN_SPEAKER_AMP_WS,   # GP3
+    sd_pin  = PIN_SPEAKER_AMP_SD    # GP4
+)
 
 # Managers
 state_manager = StateManager()
@@ -98,6 +105,7 @@ function_manager = FunctionManager(
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
+    speaker       = speaker,
 )
 state_manager.function_manager = function_manager
 
@@ -108,6 +116,7 @@ state_manager.push_stack(view_list)
 
 # ── MAIN LOOP ────────────────────────────────────────────
 
+
 try:
     while True:
         if state_manager.is_recording:
@@ -116,6 +125,8 @@ try:
             function_manager._send_nrf_chank()
         elif state_manager.is_nrf_receiving:
             function_manager._receive_nrf_chunk()
+        elif state_manager.is_playing:
+             function_manager._play_speaker()
         else:
             utime.sleep_ms(15)
 
