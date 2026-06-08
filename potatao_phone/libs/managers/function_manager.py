@@ -139,7 +139,7 @@ class FunctionManager:
 
             self.nrf.send(packet)
 
-            print("TX", seq)
+            print("TX", self.seq)
 
         except Exception as e:
 
@@ -153,7 +153,7 @@ class FunctionManager:
         utime.sleep_ms(1)
     
     def _stop_nrf_send(self):
-        print(f"[NRF] Done — {self._snd_chunk_index} chunks sent")
+        print(f"[NRF] Done — {self.seq} chunks sent")
         self.state_manager.is_nrf_sending = False
         if self._snd_file:
             self._snd_file.close()
@@ -170,6 +170,7 @@ class FunctionManager:
         
 
         self.nrf.set_power_speed(3, 2)
+        self.nrf.open_rx_pipe(0, self.address)
         self.nrf.start_listening()
         self.state_manager.is_nrf_receiving = True
         print("NRF RX READY")
