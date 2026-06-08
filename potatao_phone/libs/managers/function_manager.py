@@ -139,7 +139,7 @@ class FunctionManager:
 
             self.nrf.send(packet)
 
-            print("TX", self.seq)
+            print("TX", seq)
 
         except Exception as e:
 
@@ -153,7 +153,7 @@ class FunctionManager:
         utime.sleep_ms(1)
     
     def _stop_nrf_send(self):
-        print(f"[NRF] Done — {self.seq} chunks sent")
+        print(f"[NRF] Done — {self._snd_chunk_index} chunks sent")
         self.state_manager.is_nrf_sending = False
         if self._snd_file:
             self._snd_file.close()
@@ -170,7 +170,6 @@ class FunctionManager:
         
 
         self.nrf.set_power_speed(3, 2)
-        self.nrf.open_rx_pipe(0, self.address)
         self.nrf.start_listening()
         self.state_manager.is_nrf_receiving = True
         print("NRF RX READY")
@@ -179,7 +178,7 @@ class FunctionManager:
         folder = "/sd/recordings"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = "/sd/received.wav"
+        path  = f"/sd/received_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -192,7 +191,7 @@ class FunctionManager:
 
     def _receive_nrf_chunk(self):
         while self.nrf.any():
-            print("NRF RX ANY")
+
             try:
 
                 packet = self.nrf.recv()
@@ -246,34 +245,32 @@ class FunctionManager:
         print(f"DONE")
 
 
-
     def _start_speaker(self, context: dict):
-        if hasattr(self, '_speaker_file') and self._speaker_file is not None:
-            try:
-                self._speaker_file.close()
-            except:
-                pass
-            self._speaker_file = None
-
-        gc.collect()
-            
         self.speaker.init()
         self.state_manager.is_playing = True
         path = f"/sd/recordings/{context["name"]}"
         print(path)
-        self._speaker_file = open(path, "rb")
-        self._speaker_file.read(44)   # skip WAV header
+        try:
+            self._speaker_file = open(path, "rb")
+            self._speaker_file.read(44)   # skip WAV header
+        except OSError as e:
+            if e.errno == 5: # EIO
+                print("[Storage] Hardware EIO detected! Attempting filesystem remount reset...")
+                self._stop_speaker()
+            else:
+                raise e
 
     def _play_speaker(self):
+        # Safely attempt to pull the byte segment from the file stream
         num_read = self._speaker_file.readinto(self.speaker.buf)        
-        if num_read == 0:
+
+        if num_read == 0 or num_read is None:
             self._stop_speaker()
             return
             
-        # Pass a memoryview slice of the preallocated buffer
+        # Pass a memoryview slice of the preallocated buffer safely
         self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
-
-
+        
     def _stop_speaker(self):
         self.state_manager.is_playing = False
         self.speaker.deinit()
@@ -290,7 +287,6 @@ class FunctionManager:
             os.sync()
         except:
             pass
-
 
 
     def _write_sd(self, context: dict) -> bool:
