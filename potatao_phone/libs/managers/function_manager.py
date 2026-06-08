@@ -3,6 +3,7 @@ import os
 import struct
 import gc
 from libs.data_query.ui import get_view
+import utime 
 
 class FunctionManager:
     # WAV constants
@@ -35,7 +36,10 @@ class FunctionManager:
         #nrf setup
         #put it to state manager
         self.address = b"1Node"
-        self.nrf_endmarker = b'\xff\xff\xff\xff'  
+        self.nrf_endmarker = b'\xff\xff\xff\xff' 
+        self.seq = 0
+        self.last_seq = -1
+        self.last_packet_time = 0
 
         #speaker setup
         self._speaker_file = None
@@ -104,42 +108,49 @@ class FunctionManager:
             print("[FunctionManager] NRF not available")
             return False
         self._get_sdcard_data(context, "send_data_to_nrf")
+      
         return True
     
     def _send_data_to_nrf(self, context: dict):
         # set flag to true
         self.state_manager.is_nrf_sending = True
-        print(self.state_manager.is_nrf_sending)
-        print(context["name"])
+        self.nrf.set_power_speed(3, 2)
         filename = context["name"]
         path = f"sd/recordings/{filename}"
         self._snd_file = open(path, "rb")
         self.nrf.open_tx_pipe(self.address)
-        #skip wav header
-        self._snd_file.seek(44)
+        self.seq = 0
+        print("START TX")
+
 
     def _send_nrf_chank(self):
-        if self.nrf is None or self._snd_file is None:
-            return
-          
-        chunk_size = 24
-        chunk = self._snd_file.read(chunk_size)
+        chunk = self._snd_file.read(28)  # 28 bytes of audio data
+        
         if not chunk:
-            end_marker = b'\xff\xff\xff\xff' + b'\x00' * (chunk_size - 4)
-            try:
-                self.nrf.send(end_marker)
-            except OSError:
-                pass
             self._stop_nrf_send()
             return
-        
-        if len(chunk) < chunk_size:
-            chunk = chunk + b'\x00' * (chunk_size - len(chunk))
-        
+
+        if len(chunk) < 28:
+            chunk += bytes(28 - len(chunk))
+
+        packet = struct.pack("<I", self.seq) + chunk
+
         try:
-            self.nrf.send(chunk)
-        except OSError:
-            print(f"[NRF] Send failed at chunk")
+
+            self.nrf.send(packet)
+
+            print("TX", seq)
+
+        except Exception as e:
+
+            print("SEND FAIL:", e)
+
+            self.nrf.flush_tx()
+            self.nrf.flush_rx()
+
+        self.seq += 1
+
+        utime.sleep_ms(1)
     
     def _stop_nrf_send(self):
         print(f"[NRF] Done — {self._snd_chunk_index} chunks sent")
@@ -156,44 +167,67 @@ class FunctionManager:
         if self.nrf is None:
             print("[FunctionManager] NRF not available")
             return False
+        
+
+        self.nrf.set_power_speed(3, 2)
+        self.nrf.start_listening()
+        self.state_manager.is_nrf_receiving = True
+        print("NRF RX READY")
+        
         # self.state_manager.rec_destination = "nrf"
         folder = "/sd/recordings"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = f"{folder}/record_{index}.wav"
+        path  = f"/sd/received_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
         self._rcv_chunk_index = 0
-
-        # Write blank header placeholder — filled in on stop
-        self._rcv_file.write(bytearray(44))
-
-        self.nrf.open_rx_pipe(0, self.address)
-        self.nrf.start_listening()
-        self.state_manager.is_nrf_receiving = True
-        print(f"[NRF] Receiving → {path}")
+        self.seq = 0
+        self.last_seq = -1
+        self.last_packet_time = utime.ticks_ms()
+       
         return True
 
     def _receive_nrf_chunk(self):
-        """call every loop while is_nrf_receiving is True"""
-        if self.nrf is None or self._rcv_file is None:
-            return
+        while self.nrf.any():
 
-        #nado podumat' esli nikto ne otpravlyat////if nothing received for a long time what should we do
-        if not self.nrf.any():           # nothing arrived yet 
-            return
+            try:
 
-        chunk = self.nrf.recv()
+                packet = self.nrf.recv()
 
-        # Check for end marker in first 4 bytes
-        if chunk[:4] == self.nrf_endmarker:
+                self.last_packet_time = utime.ticks_ms()
+
+                self.seq = struct.unpack("<I", packet[:4])[0]
+
+                data = packet[4:]
+
+                # packet loss detect
+                if self.last_seq != -1:
+
+                    if self.seq != self.last_seq + 1:
+
+                        lost = self.seq - self.last_seq - 1
+                        print("LOST:", lost)
+
+                self.last_seq = self.seq
+
+                self._rcv_file.write(data)
+
+                print("RX", self.seq)
+
+            except Exception as e:
+
+                print("RX ERROR:", e)
+
+                self.nrf.flush_rx()
+
+        # stop after silence
+        if utime.ticks_diff(
+            utime.ticks_ms(),
+            self.last_packet_time
+        ) > 3000:
             self._stop_nrf_receive()
-            return
-
-        self._rcv_file.write(chunk)
-        self._rcv_byte_count  += len(chunk)
-        self._rcv_chunk_index += 1
 
 
     def _stop_nrf_receive(self):
@@ -206,13 +240,9 @@ class FunctionManager:
 
         # Rewind and write correct WAV header
         # Use same params your mic records at (e.g. 8000 Hz, mono, 16-bit)
-        self._rcv_file.seek(0)
-        self._rcv_file.write(
-            self._make_wav_header(self._rcv_byte_count)
-        )
         self._rcv_file.close()
         self._rcv_file        = None
-        print(f"[NRF] Received {self._rcv_chunk_index} chunks, {self._rcv_byte_count} bytes saved")
+        print(f"DONE")
 
 
 
@@ -233,36 +263,8 @@ class FunctionManager:
 
 
     def _play_speaker(self):
-        try:
-            # Safely attempt to pull the byte segment from the file stream
-            num_read = self._speaker_file.readinto(self.speaker.buf)        
-        except OSError as e:
-            # Check if it's the 110 timeout
-            if e.errno == 110:
-                print("[Audio Core] SD Card read timed out. Running hardware bus recovery...")
-                
-                # --- BUS RECOVERY ROUTINE ---
-                try:
-                    # 1. Grab your raw CS Pin component from your custom 'sd' object layout
-                    # If your CS pin tracking property is named differently, adjust this line
-                    cs_pin = self.sd.cs if hasattr(self.sd, 'cs') else None
-                    
-                    if cs_pin:
-                        cs_pin.value(1) # Forcefully yank Chip Select HIGH to abandon the broken block transfer
-                    
-                    # 2. Pump out 8-16 dummy clock cycles to clear out the card's internal registers
-                    if hasattr(self, 'spi'):
-                        self.spi.write(b'\xff\xff\xff\xff')
-                        
-                except Exception as recovery_err:
-                    print(f"[Audio Core] Line reset warning: {recovery_err}")
-                
-                return # Skip this pass cleanly, the next cycle will find a healthy cleared bus!
-                
-            else:
-                print(f"[Audio Core] Fatal Filesystem Loss: {e}")
-                self._stop_speaker()
-                return
+        # Safely attempt to pull the byte segment from the file stream
+        num_read = self._speaker_file.readinto(self.speaker.buf)        
 
         if num_read == 0 or num_read is None:
             self._stop_speaker()

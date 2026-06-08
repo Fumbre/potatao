@@ -71,7 +71,7 @@ ce = Pin(PIN_NRF_CE, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=1000000,
+    baudrate=8_000_000,
     polarity=0,
     phase=0,
     sck=Pin(PIN_NRF_SCK),
@@ -84,7 +84,7 @@ nrf = NRF24L01(
     csn,
     ce,
     channel=46,
-    payload_size=16
+    payload_size=32
 )
 
 # Speaker setup
