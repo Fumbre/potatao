@@ -178,7 +178,7 @@ class FunctionManager:
         folder = "/sd/recordings"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = f"/sd/received_{index}.wav"
+        path  = "/sd/received.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -190,27 +190,37 @@ class FunctionManager:
         return True
 
     def _receive_nrf_chunk(self):
-    
-        packet = self.nrf.recv()
+        while self.nrf.any():
+            print("NRF RX ANY")
+            try:
 
-        self.last_packet_time = utime.ticks_ms()
+                packet = self.nrf.recv()
 
-        self.seq = struct.unpack("<I", packet[:4])[0]
+                self.last_packet_time = utime.ticks_ms()
 
-        data = packet[4:]
+                self.seq = struct.unpack("<I", packet[:4])[0]
+
+                data = packet[4:]
 
                 # packet loss detect
-        if self.last_seq != -1:
+                if self.last_seq != -1:
 
-            if self.seq != self.last_seq + 1:
-                lost = self.seq - self.last_seq - 1
-                print("LOST:", lost)
+                    if self.seq != self.last_seq + 1:
 
-        self.last_seq = self.seq
+                        lost = self.seq - self.last_seq - 1
+                        print("LOST:", lost)
 
-        self._rcv_file.write(data)
+                self.last_seq = self.seq
 
-        print("RX", self.seq)
+                self._rcv_file.write(data)
+
+                print("RX", self.seq)
+
+            except Exception as e:
+
+                print("RX ERROR:", e)
+
+                self.nrf.flush_rx()
 
         # stop after silence
         if utime.ticks_diff(
@@ -237,32 +247,31 @@ class FunctionManager:
 
 
     def _start_speaker(self, context: dict):
+        if hasattr(self, '_speaker_file') and self._speaker_file is not None:
+            try:
+                self._speaker_file.close()
+            except:
+                pass
+            self._speaker_file = None
+
+        gc.collect()
+            
         self.speaker.init()
         self.state_manager.is_playing = True
         path = f"/sd/recordings/{context["name"]}"
         print(path)
-        try:
-            self._speaker_file = open(path, "rb")
-            self._speaker_file.read(44)   # skip WAV header
-        except OSError as e:
-            if e.errno == 5: # EIO
-                print("[Storage] Hardware EIO detected! Attempting filesystem remount reset...")
-                self._stop_speaker()
-            else:
-                raise e
-
+        self._speaker_file = open(path, "rb")
+        self._speaker_file.read(44)   # skip WAV header
 
     def _play_speaker(self):
-        # Safely attempt to pull the byte segment from the file stream
         num_read = self._speaker_file.readinto(self.speaker.buf)        
-
-        if num_read == 0 or num_read is None:
+        if num_read == 0:
             self._stop_speaker()
             return
             
-        # Pass a memoryview slice of the preallocated buffer safely
+        # Pass a memoryview slice of the preallocated buffer
         self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
-        
+
 
     def _stop_speaker(self):
         self.state_manager.is_playing = False
