@@ -40,6 +40,7 @@ class OllamaTranslator(BaseTranslator):
             f"{text}"
         )
 
+        # TODO: What role is for?
         response = self.client.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}]
@@ -64,6 +65,7 @@ class OpenAITranslator(BaseTranslator):
     def translate(self, text: str, target_language: str) -> str:
         response = self.client.chat.completions.create(
             model=self.model,
+            # TODO: okay I think I udernstad why we need role
             messages=[
                 {
                     "role": "system",

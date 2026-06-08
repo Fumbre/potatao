@@ -217,31 +217,83 @@ class FunctionManager:
 
 
     def _start_speaker(self, context: dict):
-        if hasattr(self, '_speaker_file') and self._speaker_file is not None:
-            try:
-                self._speaker_file.close()
-            except:
-                pass
-            self._speaker_file = None
-
-        gc.collect()
-            
         self.speaker.init()
         self.state_manager.is_playing = True
         path = f"/sd/recordings/{context["name"]}"
         print(path)
-        self._speaker_file = open(path, "rb")
-        self._speaker_file.read(44)   # skip WAV header
+        
+        try:
+            self._speaker_file = open(path, "rb")
+            self._speaker_file.read(44)   # skip WAV header
+        except OSError as e:
+            if e.errno == 5: # EIO
+                print("[Storage] Hardware EIO detected! Attempting filesystem remount reset...")
+                self._stop_speaker()
+            else:
+                raise e
+
+
+    # def _play_speaker(self):
+    #     try:
+    #         # Safely attempt to pull the byte segment from the file stream
+    #         num_read = self._speaker_file.readinto(self.speaker.buf)        
+    #     except OSError as e:
+    #         # Check if it's the 110 timeout or another standard storage fault
+    #         if e.errno == 110:
+    #             print("[Audio Core] SD Card read timed out. Retrying background block cycle...")
+    #             return # Skip this pass, wait for the next runtime cycle tick to try again
+    #         else:
+    #             print(f"[Audio Core] Fatal Filesystem Loss: {e}")
+    #             self._stop_speaker()
+    #             return
+
+    #     if num_read == 0 or num_read is None:
+    #         self._stop_speaker()
+    #         return
+            
+    #     # Pass a memoryview slice of the preallocated buffer safely
+    #     self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
+
 
     def _play_speaker(self):
-        num_read = self._speaker_file.readinto(self.speaker.buf)        
-        if num_read == 0:
+        try:
+            # Safely attempt to pull the byte segment from the file stream
+            num_read = self._speaker_file.readinto(self.speaker.buf)        
+        except OSError as e:
+            # Check if it's the 110 timeout
+            if e.errno == 110:
+                print("[Audio Core] SD Card read timed out. Running hardware bus recovery...")
+                
+                # --- BUS RECOVERY ROUTINE ---
+                try:
+                    # 1. Grab your raw CS Pin component from your custom 'sd' object layout
+                    # If your CS pin tracking property is named differently, adjust this line
+                    cs_pin = self.sd.cs if hasattr(self.sd, 'cs') else None
+                    
+                    if cs_pin:
+                        cs_pin.value(1) # Forcefully yank Chip Select HIGH to abandon the broken block transfer
+                    
+                    # 2. Pump out 8-16 dummy clock cycles to clear out the card's internal registers
+                    if hasattr(self, 'spi'):
+                        self.spi.write(b'\xff\xff\xff\xff')
+                        
+                except Exception as recovery_err:
+                    print(f"[Audio Core] Line reset warning: {recovery_err}")
+                
+                return # Skip this pass cleanly, the next cycle will find a healthy cleared bus!
+                
+            else:
+                print(f"[Audio Core] Fatal Filesystem Loss: {e}")
+                self._stop_speaker()
+                return
+
+        if num_read == 0 or num_read is None:
             self._stop_speaker()
             return
             
-        # Pass a memoryview slice of the preallocated buffer
+        # Pass a memoryview slice of the preallocated buffer safely
         self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
-
+        
 
     def _stop_speaker(self):
         self.state_manager.is_playing = False

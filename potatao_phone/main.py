@@ -30,7 +30,7 @@ gc.collect()
 
 
 # SD setup
-spi = SPI(1, baudrate=1320000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
+spi = SPI(1, baudrate=10_000_000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
 sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
@@ -101,7 +101,7 @@ event_manager = EventManager(state_manager)
 function_manager = FunctionManager(
     state_manager = state_manager,
     db            = db,
-    wifi          = wifi,
+    wifi          = None,
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
