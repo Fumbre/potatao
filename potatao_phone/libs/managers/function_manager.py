@@ -190,37 +190,27 @@ class FunctionManager:
         return True
 
     def _receive_nrf_chunk(self):
-        while self.nrf.any():
+    
+        packet = self.nrf.recv()
 
-            try:
+        self.last_packet_time = utime.ticks_ms()
 
-                packet = self.nrf.recv()
+        self.seq = struct.unpack("<I", packet[:4])[0]
 
-                self.last_packet_time = utime.ticks_ms()
-
-                self.seq = struct.unpack("<I", packet[:4])[0]
-
-                data = packet[4:]
+        data = packet[4:]
 
                 # packet loss detect
-                if self.last_seq != -1:
+        if self.last_seq != -1:
 
-                    if self.seq != self.last_seq + 1:
+            if self.seq != self.last_seq + 1:
+                lost = self.seq - self.last_seq - 1
+                print("LOST:", lost)
 
-                        lost = self.seq - self.last_seq - 1
-                        print("LOST:", lost)
+        self.last_seq = self.seq
 
-                self.last_seq = self.seq
+        self._rcv_file.write(data)
 
-                self._rcv_file.write(data)
-
-                print("RX", self.seq)
-
-            except Exception as e:
-
-                print("RX ERROR:", e)
-
-                self.nrf.flush_rx()
+        print("RX", self.seq)
 
         # stop after silence
         if utime.ticks_diff(
