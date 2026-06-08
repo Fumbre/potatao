@@ -221,7 +221,6 @@ class FunctionManager:
         self.state_manager.is_playing = True
         path = f"/sd/recordings/{context["name"]}"
         print(path)
-        
         try:
             self._speaker_file = open(path, "rb")
             self._speaker_file.read(44)   # skip WAV header
@@ -231,28 +230,6 @@ class FunctionManager:
                 self._stop_speaker()
             else:
                 raise e
-
-
-    # def _play_speaker(self):
-    #     try:
-    #         # Safely attempt to pull the byte segment from the file stream
-    #         num_read = self._speaker_file.readinto(self.speaker.buf)        
-    #     except OSError as e:
-    #         # Check if it's the 110 timeout or another standard storage fault
-    #         if e.errno == 110:
-    #             print("[Audio Core] SD Card read timed out. Retrying background block cycle...")
-    #             return # Skip this pass, wait for the next runtime cycle tick to try again
-    #         else:
-    #             print(f"[Audio Core] Fatal Filesystem Loss: {e}")
-    #             self._stop_speaker()
-    #             return
-
-    #     if num_read == 0 or num_read is None:
-    #         self._stop_speaker()
-    #         return
-            
-    #     # Pass a memoryview slice of the preallocated buffer safely
-    #     self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
 
 
     def _play_speaker(self):

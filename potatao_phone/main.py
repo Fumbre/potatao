@@ -134,7 +134,7 @@ try:
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
                 ui.notify(state_manager.rec_destination, "Recording...")
-            state_manager.debug()
+            # state_manager.debug()
 
         
 
