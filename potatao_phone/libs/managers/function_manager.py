@@ -139,7 +139,7 @@ class FunctionManager:
 
             self.nrf.send(packet)
 
-            print("TX", seq)
+            print("TX", self.seq)
 
         except Exception as e:
 
@@ -153,7 +153,7 @@ class FunctionManager:
         utime.sleep_ms(1)
     
     def _stop_nrf_send(self):
-        print(f"[NRF] Done — {self._snd_chunk_index} chunks sent")
+        print(f"[NRF] Done — {self.seq} chunks sent")
         self.state_manager.is_nrf_sending = False
         if self._snd_file:
             self._snd_file.close()
@@ -170,6 +170,7 @@ class FunctionManager:
         
 
         self.nrf.set_power_speed(3, 2)
+        self.nrf.open_rx_pipe(0, self.address)
         self.nrf.start_listening()
         self.state_manager.is_nrf_receiving = True
         print("NRF RX READY")
@@ -178,7 +179,7 @@ class FunctionManager:
         folder = "/sd/recordings"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = f"/sd/received_{index}.wav"
+        path  = "/sd/recordings/huj.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -191,7 +192,7 @@ class FunctionManager:
 
     def _receive_nrf_chunk(self):
         while self.nrf.any():
-
+            print("NRF RX ANY")
             try:
 
                 packet = self.nrf.recv()
@@ -245,6 +246,8 @@ class FunctionManager:
         print(f"DONE")
 
 
+
+    
     def _start_speaker(self, context: dict):
         self.speaker.init()
         self.state_manager.is_playing = True
@@ -287,6 +290,8 @@ class FunctionManager:
             os.sync()
         except:
             pass
+
+
 
 
     def _write_sd(self, context: dict) -> bool:
@@ -423,5 +428,3 @@ class FunctionManager:
                 os.mkdir(current)
             except OSError:
                 pass   # already exists
-
-        
