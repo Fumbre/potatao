@@ -84,7 +84,7 @@ nrf = NRF24L01(
     csn,
     ce,
     channel=46,
-    payload_size=16
+    payload_size=32
 )
 
 # Speaker setup
