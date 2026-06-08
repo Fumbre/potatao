@@ -1,3 +1,0 @@
-'''
-Piper + ElevenLabs + strategy pattern
-'''

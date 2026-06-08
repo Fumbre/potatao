@@ -1,3 +1,0 @@
-'''
-Ollama + strategy pattern
-'''

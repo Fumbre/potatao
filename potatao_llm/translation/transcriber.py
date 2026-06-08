@@ -1,13 +1,14 @@
 '''
 Faster-Whisper + strategy pattern
 '''
+# ABC = Abstract Base Class
 from abc import ABC, abstractmethod
+
+# allows you to create files in memory (RAM)
 import io
 
-
-# ── Base interface ─────────────────────────────────────────────────────────────
+# Base interface 
 # Every transcriber must implement this — swap implementations in server.py
-
 class BaseTranscriber(ABC):
     @abstractmethod
     def transcribe(self, audio_bytes: bytes) -> str:
@@ -17,8 +18,7 @@ class BaseTranscriber(ABC):
         pass
 
 
-# ── Faster-Whisper (local) ─────────────────────────────────────────────────────
-
+# Faster-Whisper (local) 
 class FasterWhisperTranscriber(BaseTranscriber):
     def __init__(self, model_size: str = "base"):
         """
@@ -44,7 +44,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
         # Faster-Whisper expects a file path or file-like object
         audio_file = io.BytesIO(audio_bytes)
 
-        # segments is a generator — iterate to get all transcribed text chunks
+        # segments is a generator: iterate to get all transcribed text chunks
         segments, _ = self.model.transcribe(audio_file)
 
         # Join all segments into a single string
@@ -54,8 +54,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
         return text
 
 
-# ── OpenAI Whisper API (cloud fallback) ───────────────────────────────────────
-
+# OpenAI Whisper API (cloud fallback) 
 class OpenAITranscriber(BaseTranscriber):
     def __init__(self, api_key: str):
         """
@@ -77,5 +76,4 @@ class OpenAITranscriber(BaseTranscriber):
         text = response.text.strip()
         print(f"[Transcriber] Transcribed: {text}")
         return text
-    
     
