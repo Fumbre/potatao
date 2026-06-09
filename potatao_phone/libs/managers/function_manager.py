@@ -302,12 +302,13 @@ class FunctionManager:
         folder = "/sd/recordings"
         try:
             names = os.listdir(folder)
+            print(names)
         except OSError:
             print(f"[FunctionManager] No recordings folder")
             return False
 
         rows = []
-        for name in sorted(names):
+        for name in names:
             if not name.lower().endswith(".wav"):
                 continue
             rows.append({
@@ -339,6 +340,7 @@ class FunctionManager:
                 if lower.startswith("record_") and lower.endswith(".wav"):
                     try:
                         n = int(lower[7:-4])
+                        print(n)
                         if n > max_index:
                             max_index = n
                     except ValueError:
