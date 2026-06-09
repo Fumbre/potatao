@@ -4,13 +4,14 @@ from common.exception.exception_handler import register_exception_handler
 from config.lifespan import lifespan
 from service.router.pico_device import router as pico_device_router
 from service.router.communication import router as communication_router
+from service.router.language_router import router as language_router
 
 app = FastAPI(lifespan=lifespan)
 register_exception_handler(app)
 
 app.include_router(pico_device_router)
 app.include_router(communication_router)
-
+app.include_router(language_router)
 
 if __name__ == "__main__":
     import uvicorn

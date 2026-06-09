@@ -30,7 +30,7 @@ class TranslatorProcesser:
     
     @classmethod
     def get_translator(cls)->OllamaTranslator:
-        return cls.translator
+        return cls._instance.translator
     
     @classmethod
     def get_tts(cls)->PiperTTS:

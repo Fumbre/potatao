@@ -18,6 +18,8 @@ from libs.managers.function_manager import FunctionManager
 
 from libs.encrpytion.encryption import register
 
+from libs.language.language_setting import init_language
+
 import utime
 import os
 import gc
@@ -123,6 +125,8 @@ state_manager.push_stack(view_list)
 
 # ------------  reigester pico device to zero ------
 register()
+# get language data from zero
+init_language()
 
 # ── MAIN LOOP ────────────────────────────────────────────
 

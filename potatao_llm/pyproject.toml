@@ -15,5 +15,6 @@ dependencies = [
     "redis==7.4.0",
     "piper-tts>=1.2.0",
     "elevenlabs>=1.0.0",
+    "onnxruntime-gpu==1.26.0",
     "cryptography>=42.0.0"
 ]

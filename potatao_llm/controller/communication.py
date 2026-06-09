@@ -26,10 +26,14 @@ async def shake_hands(token:str)->BaseResponse:
     #generate x25519 keypair
     private_key, public_key =  X25519MUtil.generate_keypair()
     #generate aes key
-    aes_key = X25519MUtil.generate_data_encrypting_key(private_key,data["zero_public_key"])
+    aes_key = X25519MUtil.generate_data_encrypting_key(private_key,data["pico_public_key"])
     #put aes key into redis
     RedisClient.set(f"aes_key:{data["target_id"]}",aes_key)
     return BaseResponse.success(data=public_key)
 
 
-    
+@router.get("/disconnect/{target_id}")
+async def disconnect(target_id:str)->BaseResponse:
+    # delete aes key in Redis
+    RedisClient.delete(f"aes_key:{target_id}")
+    return BaseResponse.success()

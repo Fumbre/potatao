@@ -39,6 +39,7 @@ class PiperTTS(BaseTTS):
         "Ukrainian":  "uk_UA-lada-x_low",
         "Russian":    "ru_RU-ruslan-medium",
         "Polish":     "pl_PL-mls-medium",
+        "Chinese":    "zh_CN-huayan-medium"
     }
 
     # Default voice used when the target language has no mapping
@@ -61,18 +62,23 @@ class PiperTTS(BaseTTS):
         return self._loaded_voices[voice_name]
 
     def synthesize(self, text: str, language: str) -> bytes:
-        import io
-        import wave
-
-        voice = self._get_voice(language)
-
-        # Piper writes audio to a WAV file-like object
-        wav_buffer = io.BytesIO()
-        with wave.open(wav_buffer, "wb") as wav_file:
-            voice.synthesize(text, wav_file)
-
-        print(f"[TTS] Synthesized {len(wav_buffer.getvalue())} bytes (Piper, {language})")
-        return wav_buffer.getvalue()
+       voice = self._get_voice(language)
+        
+        # 1. 直接获取 generator 产出的所有音频数据
+       pcm_data = bytearray()
+        
+        # 调用 Piper 库自带的 synthesize 生成器
+       for audio_chunk in voice.synthesize(text):
+            # audio_chunk.audio_int16_bytes 存储了 PCM 数据
+            pcm_data.extend(audio_chunk.audio_int16_bytes)
+            
+       print(f"[TTS DEBUG] PCM 数据总长度: {len(pcm_data)} 字节")
+        
+       if len(pcm_data) == 0:
+            print("[TTS ERROR] 推理引擎未能生成任何音频数据！")
+            return b""
+            
+       return bytes(pcm_data)
 
 
 class ElevenLabsTTS(BaseTTS):

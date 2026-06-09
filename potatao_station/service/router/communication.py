@@ -6,7 +6,6 @@ import asyncio
 from common.aws3.s3 import S3Util
 from common.encrptytion.aes.aes import AESUtil
 from common.redis.redis import RedisClient
-from request.pico_device_request import CommunicationData
 
 router = APIRouter(prefix="/communication/pico",tags=["websocket"])
 

@@ -14,7 +14,8 @@ dependencies = [
     "cryptography",
     "pydantic",
     "pysqlite3-binary",
-    "redis"
+    "redis",
+    "httpx"
 ]
 
 [build-system]

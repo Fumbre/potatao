@@ -8,6 +8,7 @@ from common.database.db import DB
 from common.encrptytion.jwt.jwttoken import TokenUitl
 from common.encrptytion.x25519.x25519 import X25519MUtil
 from common.exception.base import BusinessException
+from common.http.http import HttpUtil
 from common.redis.redis import RedisClient
 from common.response.base_response import BaseResponse
 from model.pico_device_model import PicoDevice
@@ -57,6 +58,20 @@ async def pico_authentication(pico_auth:PicoDeviceRequest)->BaseResponse:
     session_id = S3Util.start_session(machine_id=data["machine_id"],user_id=data["pico_public_key"],bucket_name="audio",content_type=FileType.WAV)
     ## put session id into redis
     RedisClient.set(f"s3_session_id:{data['machine_id']}",session_id)
+    #authorzie with AI service
+    data_llm = {
+        "pico_public_key":public_key,
+        "target_id":"test"
+    }
+    llm_token = TokenUitl.generate_token(data_llm)
+    result = await HttpUtil.get(url=f"/shakeHand/{llm_token}")
+    llm_public_key = result.get("data")
+    translated_aes_key = X25519MUtil.generate_data_encrypting_key(private_key,pico_public_key=llm_public_key)
+    # put this aes key into redis
+    RedisClient.set(f"llm_data_key:{data['machine_id']}",translated_aes_key)
+    #start s3 uploading session
+    llm_session_id = S3Util.start_session(machine_id=data["machine_id"],user_id=llm_public_key,bucket_name="translated_audio",content_type=FileType.WAV)
+    RedisClient.set(f"llm_session_id:{data['machine_id']}",llm_session_id)
     ## return zero public key
     return BaseResponse.success(data=public_key)
 
@@ -67,14 +82,18 @@ async def disconnect(machine_id:str)->BaseResponse:
     await manager.disconnect(machine_id)
     if not RedisClient.sexist("pico_device", machine_id):
         raise BusinessException("This machine does not register, please register firstly!", 500)
-    ## delete aes key from Redis
+    ## delete aes keys from Redis
     RedisClient.delete(f"pico_data_key:{machine_id}")
+    RedisClient.delete(f"llm_data_key:{machine_id}")
     ## get session id
     session_id = RedisClient.get(f"s3_session_id:{machine_id}")
     ## finish the S3 uploading session
     S3Util.complete_session(session_id)
     ## delete this session id from redis
     RedisClient.delete(f"s3_session_id:{machine_id}")
+    llm_session_id = RedisClient.get(f"llm_session_id:{machine_id}")
+    S3Util.complete_session(llm_session_id)
+    RedisClient.delete(f"llm_session_id:{machine_id}")
     return BaseResponse.success()
 
 @router.get("/registeration/check/{machine_id}")

@@ -27,6 +27,7 @@ class AWS3Settings(BaseModel):
     
 class CustomSettings(BaseModel):
     token_secret_key:str = "abcdefghijklmnopqrstuvwxyz"
+    llm_url:str="http://127.0.0.1:8001"
 
 
 class AppSettings(BaseSettings):

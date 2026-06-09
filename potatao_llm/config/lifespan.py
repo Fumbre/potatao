@@ -5,6 +5,8 @@ from encryption.aes.aes import AESUtil
 from encryption.x25519.x25519 import X25519MUtil
 from translation.processer import TranslatorProcesser
 from cache.redis.redis import RedisClient
+from tools.http.http import HttpUtil
+import json
 
 import os
 from dotenv import load_dotenv
@@ -19,6 +21,8 @@ REDIS_PORT= os.getenv("REDIS_PORT")
 REDIS_DB= os.getenv("REDIS_DB")
 REDIS_PASSWORD= os.getenv("REDIS_PASSWORD")
 REDIS_MAX_CONNECTION= int(os.getenv("REDIS_MAX_CONNECTION"))
+ZERO_BASE_URL = os.getenv("ZERO_BASE_URL")
+LANGUAGE_API = os.getenv("LANGUAGE_API")
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -32,6 +36,12 @@ async def lifespan(app:FastAPI):
     X25519MUtil.init(secret_key=SECRET_KEY)
     #init redis client
     RedisClient.init(ip=REDIS_HOST,port=REDIS_PORT,db=REDIS_DB,password=REDIS_PASSWORD,max_connection=REDIS_MAX_CONNECTION)
+    ## init http util
+    HttpUtil.init(base_url=ZERO_BASE_URL)
+    # get language data
+    language_list = await HttpUtil.get(url=LANGUAGE_API)
+    #put language list into redis
+    RedisClient.set("lang_list",json.dumps(language_list))
     print("potatao llm start successfully!")
     yield
     print("potatao llm close successfully!")

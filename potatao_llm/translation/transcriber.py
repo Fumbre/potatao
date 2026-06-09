@@ -32,7 +32,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
 
         # device="cpu" because this runs on a regular PC without GPU requirement
         # compute_type="int8" reduces RAM usage significantly with minimal quality loss
-        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
 
         print("[Transcriber] Model loaded.")
 

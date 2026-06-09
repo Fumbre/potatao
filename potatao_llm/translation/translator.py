@@ -14,7 +14,7 @@ class BaseTranslator(ABC):
 
 
 class OllamaTranslator(BaseTranslator):
-    def __init__(self, model: str = "mistral", host: str = "http://141.252.232.202:11434"):
+    def __init__(self, model: str = "mistral", host: str = "http://localhost:11434"):
         """
         model         Ollama model to use for translation.
                       Good lightweight options: mistral, llama3, phi3
