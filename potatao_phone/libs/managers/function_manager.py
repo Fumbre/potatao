@@ -60,8 +60,8 @@ class FunctionManager:
             "stop_speaker": self._stop_speaker,
         }
 
-        #govno code fix in future
-        self.prev_folder = None
+        # the menu folder for getting correct directory
+        self.menu_folder = None
 
     def execute(self, function_name: str, context: dict) -> bool:
         """
@@ -254,8 +254,7 @@ class FunctionManager:
     def _start_speaker(self, context: dict):
         self.speaker.init()
         self.state_manager.is_playing = True
-        path = f"/sd/{self.prev_folder}/{context['name']}"
-        print(self.prev_folder, "afsdfdsaf")
+        path = f"/sd/{self.menu_folder}/{context['name']}"
         try:
             self._speaker_file = open(path, "rb")
             self._speaker_file.read(44)   # skip WAV header
@@ -307,11 +306,13 @@ class FunctionManager:
             folder ="/sd/recordings"
         else:
             folder = f"/sd/{context['name']}"
-        self.prev_folder = context["name"]
+        
+        # write the menu folder name to state
+        self.menu_folder = context["name"]
         try:
             names = os.listdir(folder)
         except OSError:
-            print(f"[FunctionManager] No recordings folder")
+            print(f"[FunctionManager] No {self.menu_folder} folder")
             return False
 
         rows = []
