@@ -60,6 +60,9 @@ class FunctionManager:
             "stop_speaker": self._stop_speaker,
         }
 
+        #govno code fix in future
+        self.prev_folder = None
+
     def execute(self, function_name: str, context: dict) -> bool:
         """
         Executes function by name.
@@ -116,7 +119,7 @@ class FunctionManager:
         self.state_manager.is_nrf_sending = True
         self.nrf.set_power_speed(3, 2)
         filename = context["name"]
-        path = f"sd/recordings/{filename}"
+        path = f"/sd/recordings/{filename}"
         self._snd_file = open(path, "rb")
         self.nrf.open_tx_pipe(self.address)
         self.seq = 0
@@ -176,10 +179,11 @@ class FunctionManager:
         print("NRF RX READY")
         
         # self.state_manager.rec_destination = "nrf"
-        folder = "/sd/recordings"
+        folder = "/sd/received"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = "/sd/received.wav"
+        print(index)
+        path  = f"{folder}/record_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -247,33 +251,33 @@ class FunctionManager:
 
 
 
+    
     def _start_speaker(self, context: dict):
-        if hasattr(self, '_speaker_file') and self._speaker_file is not None:
-            try:
-                self._speaker_file.close()
-            except:
-                pass
-            self._speaker_file = None
-
-        gc.collect()
-            
         self.speaker.init()
         self.state_manager.is_playing = True
-        path = f"/sd/recordings/{context["name"]}"
-        print(path)
-        self._speaker_file = open(path, "rb")
-        self._speaker_file.read(44)   # skip WAV header
+        path = f"/sd/{self.prev_folder}/{context['name']}"
+        print(self.prev_folder, "afsdfdsaf")
+        try:
+            self._speaker_file = open(path, "rb")
+            self._speaker_file.read(44)   # skip WAV header
+        except OSError as e:
+            if e.errno == 5: # EIO
+                print("[Storage] Hardware EIO detected! Attempting filesystem remount reset...")
+                self._stop_speaker()
+            else:
+                raise e
 
     def _play_speaker(self):
+        # Safely attempt to pull the byte segment from the file stream
         num_read = self._speaker_file.readinto(self.speaker.buf)        
-        if num_read == 0:
+
+        if num_read == 0 or num_read is None:
             self._stop_speaker()
             return
             
-        # Pass a memoryview slice of the preallocated buffer
+        # Pass a memoryview slice of the preallocated buffer safely
         self.speaker.play_chunk(memoryview(self.speaker.buf)[:num_read])
-
-
+        
     def _stop_speaker(self):
         self.state_manager.is_playing = False
         self.speaker.deinit()
@@ -293,12 +297,18 @@ class FunctionManager:
 
 
 
+
     def _write_sd(self, context: dict) -> bool:
         self.state_manager.rec_destination = "sd"
         return True
 
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
-        folder = "/sd/recordings"
+        print("from get sd card data", context["name"])
+        if context["name"] != "recordings" and context["name"] != "received":
+            folder ="/sd/recordings"
+        else:
+            folder = f"/sd/{context['name']}"
+        self.prev_folder = context["name"]
         try:
             names = os.listdir(folder)
         except OSError:
