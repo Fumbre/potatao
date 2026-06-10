@@ -60,6 +60,9 @@ class FunctionManager:
             "stop_speaker": self._stop_speaker,
         }
 
+        #govno code fix in future
+        self.prev_folder = None
+
     def execute(self, function_name: str, context: dict) -> bool:
         """
         Executes function by name.
@@ -116,7 +119,7 @@ class FunctionManager:
         self.state_manager.is_nrf_sending = True
         self.nrf.set_power_speed(3, 2)
         filename = context["name"]
-        path = f"sd/recordings/{filename}"
+        path = f"/sd/recordings/{filename}"
         self._snd_file = open(path, "rb")
         self.nrf.open_tx_pipe(self.address)
         self.seq = 0
@@ -176,10 +179,10 @@ class FunctionManager:
         print("NRF RX READY")
         
         # self.state_manager.rec_destination = "nrf"
-        folder = "/sd/recordings"
+        folder = "/sd/received"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = "/sd/recordings/huj.wav"
+        path  = f"{folder}/record_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -251,8 +254,8 @@ class FunctionManager:
     def _start_speaker(self, context: dict):
         self.speaker.init()
         self.state_manager.is_playing = True
-        path = f"/sd/recordings/{context["name"]}"
-        print(path)
+        path = f"/sd/{self.prev_folder}/{context['name']}"
+        print(self.prev_folder, "afsdfdsaf")
         try:
             self._speaker_file = open(path, "rb")
             self._speaker_file.read(44)   # skip WAV header
@@ -299,7 +302,12 @@ class FunctionManager:
         return True
 
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
-        folder = "/sd/recordings"
+        print("from get sd card data", context["name"])
+        if context["name"] != "recordings" and context["name"] != "received":
+            folder ="/sd/recordings"
+        else:
+            folder = f"/sd/{context['name']}"
+        self.prev_folder = context["name"]
         try:
             names = os.listdir(folder)
         except OSError:

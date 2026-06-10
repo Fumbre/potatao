@@ -24,7 +24,9 @@ def db_create(db):
     default_items = [
         (1, 0, 'WiFi mess',  0, 'link'),
         (2, 0, 'NRF mess',   1, 'link'),
-        (3, 0, 'SD Card',    2, 'get_sdcard_data'),
+        (3, 0, 'SD Card',    2, 'link'),
+        (11, 3, 'recordings',    0, 'get_sdcard_data'),
+        (12, 3, 'received',    1, 'get_sdcard_data'),
         (4, 0, 'Settings',   3, 'link'),
         (5, 0, 'Extra',      4, 'link'),
         (6, 4, 'Volume',     1, 'volume_state'),
