@@ -182,7 +182,6 @@ class FunctionManager:
         folder = "/sd/received"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        print(index)
         path  = f"{folder}/record_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
@@ -311,12 +310,13 @@ class FunctionManager:
         self.prev_folder = context["name"]
         try:
             names = os.listdir(folder)
+            print(names)
         except OSError:
             print(f"[FunctionManager] No recordings folder")
             return False
 
         rows = []
-        for name in sorted(names):
+        for name in names:
             if not name.lower().endswith(".wav"):
                 continue
             rows.append({
@@ -348,6 +348,7 @@ class FunctionManager:
                 if lower.startswith("record_") and lower.endswith(".wav"):
                     try:
                         n = int(lower[7:-4])
+                        print(n)
                         if n > max_index:
                             max_index = n
                     except ValueError:
@@ -437,5 +438,3 @@ class FunctionManager:
                 os.mkdir(current)
             except OSError:
                 pass   # already exists
-
-        
