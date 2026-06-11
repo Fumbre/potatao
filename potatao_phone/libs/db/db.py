@@ -33,7 +33,9 @@ def db_create(db):
         (7, 4, 'Nickname',   2, 'change_nickname'),
         (8, 4, 'Back',       3, 'pop_back'),
         (9, 2, 'receive  NRF',       0, 'receive_nrf'),
-        (10, 2, 'send to NRF',       1, 'send_nrf'),
+        (10, 2, 'send to NRF', 1, 'link'),
+        (13, 10, 'send recordings', 1, 'send_nrf'),
+        (14, 10, 'send received', 1, 'send_nrf'),
     ]
 
     # Dynamic SQL string construction for usqlite
