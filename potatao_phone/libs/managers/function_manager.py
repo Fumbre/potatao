@@ -58,6 +58,7 @@ class FunctionManager:
             "play_speaker": self._play_speaker,
             "start_speaker": self._start_speaker,
             "stop_speaker": self._stop_speaker,
+            "pop_back": self._back_to_prev_menu,
         }
 
         # the menu folder for getting correct directory
@@ -90,6 +91,10 @@ class FunctionManager:
 
         self.state_manager.push_stack(rows)
         self.state_manager.reset_cursor()
+        return True
+
+    def _back_to_prev_menu(self, who):
+        self.state_manager.pop_stack()
         return True
 
     def _send_wifi(self, context: dict) -> bool:
