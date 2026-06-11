@@ -53,7 +53,7 @@ class FunctionManager:
             "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
             "send_data_to_nrf":    self._send_data_to_nrf, 
-            "send_nrf_chank": self._send_nrf_chank,
+            "send_nrf_chunk": self._send_nrf_chunk,
             "stop_nrf_send": self._stop_nrf_send,
             "play_speaker": self._play_speaker,
             "start_speaker": self._start_speaker,
@@ -124,14 +124,14 @@ class FunctionManager:
         self.state_manager.is_nrf_sending = True
         self.nrf.set_power_speed(3, 2)
         filename = context["name"]
-        path = f"/sd/recordings/{filename}"
+        path = f"/sd/{self.menu_folder}/{filename}"
         self._snd_file = open(path, "rb")
         self.nrf.open_tx_pipe(self.address)
         self.seq = 0
         print("START TX")
 
 
-    def _send_nrf_chank(self):
+    def _send_nrf_chunk(self):
         chunk = self._snd_file.read(28)  # 28 bytes of audio data
         
         if not chunk:
@@ -306,14 +306,23 @@ class FunctionManager:
         return True
 
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
+        """
+         if context is not "recording" or "received"
+         then  folder is "sd/recordings"
+         else  folder is "sd/" or "sd/received"
+        """
+
         print("from get sd card data", context["name"])
+
+        print("function name:", function_name)
+
         if context["name"] != "recordings" and context["name"] != "received":
             folder ="/sd/recordings"
         else:
             folder = f"/sd/{context['name']}"
-        
-        # write the menu folder name to state
-        self.menu_folder = context["name"]
+            # write the menu folder name to state
+            self.menu_folder = context["name"]
+            print(self.menu_folder)
         try:
             names = os.listdir(folder)
         except OSError:

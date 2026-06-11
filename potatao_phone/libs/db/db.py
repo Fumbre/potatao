@@ -25,15 +25,17 @@ def db_create(db):
         (1, 0, 'WiFi mess',  0, 'link'),
         (2, 0, 'NRF mess',   1, 'link'),
         (3, 0, 'SD Card',    2, 'link'),
-        (11, 3, 'recordings',    0, 'get_sdcard_data'),
-        (12, 3, 'received',    1, 'get_sdcard_data'),
         (4, 0, 'Settings',   3, 'link'),
         (5, 0, 'Extra',      4, 'link'),
         (6, 4, 'Volume',     1, 'volume_state'),
         (7, 4, 'Nickname',   2, 'change_nickname'),
         (8, 4, 'Back',       3, 'pop_back'),
         (9, 2, 'receive  NRF',       0, 'receive_nrf'),
-        (10, 2, 'send to NRF',       1, 'send_nrf'),
+        (10, 2, 'send to NRF', 1, 'link'),
+        (11, 3, 'recordings',    0, 'get_sdcard_data'),
+        (12, 3, 'received',    1, 'get_sdcard_data'),
+        (13, 10, 'recordings', 1, 'send_nrf'),
+        (14, 10, 'received', 1, 'send_nrf'),
     ]
 
     # Dynamic SQL string construction for usqlite
