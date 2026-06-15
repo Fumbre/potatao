@@ -15,7 +15,7 @@ class BaseTranscriber(ABC):
         """
         Receives raw audio bytes (WAV or PCM) and returns the transcribed text.
         """
-        pass
+        pass 
 
 
 # Faster-Whisper (local) 
@@ -30,7 +30,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
 
         print(f"[Transcriber] Loading Faster-Whisper model: {model_size}")
 
-        # device="cpu" because this runs on a regular PC without GPU requirement
+        # device="cpu" because this runs on a regular PC without GPU requirement # 
         # compute_type="int8" reduces RAM usage significantly with minimal quality loss
         self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
 
@@ -58,7 +58,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
 class OpenAITranscriber(BaseTranscriber):
     def __init__(self, api_key: str):
         """
-        @param api_key  Your OpenAI API key (store in .env, never hardcode)
+        @param api_key  Your OpenAI API key (store in .env)
         """
         import openai
         self.client = openai.OpenAI(api_key=api_key)

@@ -61,7 +61,6 @@ db = usqlite.connect("/sd/potatao.db")
 if not db_exist(db):
     db_create(db)
 
-
 # conf
 config = load_env()
 
@@ -80,7 +79,7 @@ ce = Pin(PIN_NRF_CE, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=1000000,
+    baudrate=8_000_000,
     polarity=0,
     phase=0,
     sck=Pin(PIN_NRF_SCK),
@@ -93,7 +92,7 @@ nrf = NRF24L01(
     csn,
     ce,
     channel=46,
-    payload_size=16
+    payload_size=32
 )
 
 # Speaker setup
@@ -110,7 +109,7 @@ event_manager = EventManager(state_manager)
 function_manager = FunctionManager(
     state_manager = state_manager,
     db            = db,
-    wifi          = wifi,
+    wifi          = None,
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
@@ -141,7 +140,7 @@ try:
         if state_manager.is_recording:
             function_manager.write_chunk() # after write chunk clear memory
         elif state_manager.is_nrf_sending:
-            function_manager._send_nrf_chank()
+            function_manager._send_nrf_chunk()
         elif state_manager.is_nrf_receiving:
             function_manager._receive_nrf_chunk()
         elif state_manager.is_playing:
@@ -152,10 +151,11 @@ try:
         loop.run_until_complete(_yield())
             
         if event_manager.process():
+            gc.collect() # collect garbage memory on rerender
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
                 ui.notify(state_manager.rec_destination, "Recording...")
-            state_manager.debug()
+            # state_manager.debug()
 
         
 

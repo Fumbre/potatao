@@ -8,7 +8,7 @@ class Speaker:
         self._ws_pin  = ws_pin
         self._sd_pin  = sd_pin
         self.speaker_I2S = None
-        self.buf = bytearray(1024)  # preallocated output buffer
+        self.buf = bytearray(2048)  # preallocated output buffer
 
     def init(self):
         if self.speaker_I2S is not None:

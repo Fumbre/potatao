@@ -26,7 +26,7 @@ speaker = I2S(
 print("Playing dogbark...")
 
 buf = bytearray(1024)
-with open('/sd/record.wav', 'rb') as f:
+with open('/sd/recordings/record_1.wav', 'rb') as f:
     f.seek(44)  # skip WAV header (44 bytes standard)
     while True:
         num_read = f.readinto(buf)

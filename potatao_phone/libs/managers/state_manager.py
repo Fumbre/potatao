@@ -1,7 +1,7 @@
 # libs/managerss/state_manager.py
 
 class StateManager:
-    def __init__(self, function_manager = None,prefered_language = "en"):
+    def __init__(self, function_manager = None, prefered_language = "en"):
         self._stack   = []
         self._cursors = {1: 0}
         self.is_recording = False
@@ -78,6 +78,9 @@ class StateManager:
     def handle_cancel(self):
         if self.is_recording:
             return False
+        if self.is_playing:
+            self.function_manager._stop_speaker()
+            return True
         
         if self.depth() > 1:
             # Wipe out old nested track pointers to prevent index overlap bugs
@@ -90,6 +93,9 @@ class StateManager:
     def handle_home(self):
         if self.is_recording:
             return False
+        if self.is_playing:
+            self.function_manager._stop_speaker()
+            return True
         
         # Only reset if we aren't recording and aren't already on the home screen
         if self.depth() > 1:
@@ -102,6 +108,9 @@ class StateManager:
         return False
     
     def handle_recording(self, pressed: bool):
+        if self.is_playing:
+            self.function_manager._stop_speaker()
+        
         if pressed and not self.is_recording:
             self.is_recording = True
             self.function_manager.start_recording()
