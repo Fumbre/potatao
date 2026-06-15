@@ -30,9 +30,10 @@ class FasterWhisperTranscriber(BaseTranscriber):
 
         print(f"[Transcriber] Loading Faster-Whisper model: {model_size}")
 
-        # device="cpu" because this runs on a regular PC without GPU requirement
+        # device="cpu" because this runs on a regular PC without GPU requirement # 
         # compute_type="int8" reduces RAM usage significantly with minimal quality loss
-        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        self.model = WhisperModel(model_size, device="cpu", compute_type="int8") 
+        # TODO: some pc have the GPU on nvdia.
 
         print("[Transcriber] Model loaded.")
 
@@ -45,7 +46,8 @@ class FasterWhisperTranscriber(BaseTranscriber):
         audio_file = io.BytesIO(audio_bytes)
 
         # segments is a generator: iterate to get all transcribed text chunks
-        segments, _ = self.model.transcribe(audio_file)
+        segments, _ = self.model.transcribe(audio_file) 
+        # TODO: how this recursion works?
 
         # Join all segments into a single string
         text = " ".join(segment.text for segment in segments).strip()
@@ -58,7 +60,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
 class OpenAITranscriber(BaseTranscriber):
     def __init__(self, api_key: str):
         """
-        api_key  Your OpenAI API key (store in .env, never hardcode)
+        @param api_key  Your OpenAI API key (store in .env)
         """
         import openai
         self.client = openai.OpenAI(api_key=api_key)

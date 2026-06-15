@@ -22,6 +22,7 @@ app = FastAPI()
 # Initialise components once at startup 
 # Change these lines to switch implementations without touching anything else
 transcriber = FasterWhisperTranscriber(model_size="base")
+# TODO: add to .env file model and model size of llm
 translator = OllamaTranslator(model="mistral")
 tts = PiperTTS()
 
@@ -50,16 +51,16 @@ async def audio_endpoint(websocket: WebSocket):
             if len(data) < 2:
                 print("[Server] Message too short, ignoring.")
                 continue
- 
+
             # Parse language name from the first part of the message
-            lang_len = data[0]                 # first byte = length of language string
-            
+            lang_len = data[0]               # first byte = length of language string
+
             # next N bytes = language name
             # Example: if lang_len = 6, read data[1:7] and get "French"
-            language = data[1:1 + lang_len].decode()  
+            language = data[1:1 + lang_len].decode()
 
             # rest = WAV (Waveform Audio File Format) audio bytes
-            audio = data[1 + lang_len:]               
+            audio = data[1 + lang_len:]
  
             print(f"[Server] Received {len(audio)} bytes of audio, target language: {language}")
  

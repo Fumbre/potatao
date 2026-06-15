@@ -42,7 +42,7 @@ class PiperTTS(BaseTTS):
     }
 
     # Default voice used when the target language has no mapping
-    DEFAULT_VOICE = "en_US-lessac-medium"
+    DEFAULT_VOICE = "en_US-lessac-medium" #TODO: Good job
 
     def __init__(self):
         from piper.voice import PiperVoice
@@ -67,6 +67,7 @@ class PiperTTS(BaseTTS):
         voice = self._get_voice(language)
 
         # Piper writes audio to a WAV file-like object
+        # TODO: so we write it or we can send it!? who is wave
         wav_buffer = io.BytesIO()
         with wave.open(wav_buffer, "wb") as wav_file:
             voice.synthesize(text, wav_file)
@@ -99,7 +100,7 @@ class ElevenLabsTTS(BaseTTS):
         "Ukrainian":  "ThT5KcBeYPX3keUQqHPh",
     }
 
-    DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM"
+    DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM" # or VOICE_MAP["English"] to understand what is the language
 
     def __init__(self, api_key: str):
         """

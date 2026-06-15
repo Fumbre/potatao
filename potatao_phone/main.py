@@ -30,7 +30,7 @@ gc.collect()
 
 
 # SD setup
-spi = SPI(1, baudrate=1320000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
+spi = SPI(1, baudrate=10_000_000, sck=Pin(PIN_SDCARD_CLK), mosi=Pin(PIN_SDCARD_MOSI), miso=Pin(PIN_SDCARD_MISO))
 sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
@@ -71,7 +71,7 @@ ce = Pin(PIN_NRF_CE, Pin.OUT, value=0)
 
 spi = SPI(
     0,
-    baudrate=1000000,
+    baudrate=8_000_000,
     polarity=0,
     phase=0,
     sck=Pin(PIN_NRF_SCK),
@@ -84,7 +84,7 @@ nrf = NRF24L01(
     csn,
     ce,
     channel=46,
-    payload_size=16
+    payload_size=32
 )
 
 # Speaker setup
@@ -101,7 +101,7 @@ event_manager = EventManager(state_manager)
 function_manager = FunctionManager(
     state_manager = state_manager,
     db            = db,
-    wifi          = wifi,
+    wifi          = None,
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
@@ -134,7 +134,7 @@ try:
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
                 ui.notify(state_manager.rec_destination, "Recording...")
-            state_manager.debug()
+            # state_manager.debug()
 
         
 
