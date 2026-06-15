@@ -3,7 +3,7 @@ from machine import Pin
 import utime
 
 class Debounce:
-    DEBOUNCE_MS = 50 # milliseconds that the button must be stable before being pressed
+    DEBOUNCE_MS = .2 # milliseconds that the button must be stable before being pressed
 
     '''
     pin_number   GPIO pin number
@@ -45,3 +45,4 @@ class Debounce:
         # Update state and time for the next comparison
         self.last_state = current_state
         self.last_press_ms = now
+
