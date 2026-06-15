@@ -35,7 +35,7 @@ sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-# os.remove("/sd/potatao.db")
+os.remove("/sd/potatao.db")
 
 # Display setup
 ui = UI()
@@ -122,7 +122,7 @@ try:
         if state_manager.is_recording:
             function_manager.write_chunk() # after write chunk clear memory
         elif state_manager.is_nrf_sending:
-            function_manager._send_nrf_chank()
+            function_manager._send_nrf_chunk()
         elif state_manager.is_nrf_receiving:
             function_manager._receive_nrf_chunk()
         elif state_manager.is_playing:
@@ -131,6 +131,7 @@ try:
             utime.sleep_ms(15)
 
         if event_manager.process():
+            gc.collect() # collect garbage memory on rerender
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
                 ui.notify(state_manager.rec_destination, "Recording...")

@@ -53,12 +53,16 @@ class FunctionManager:
             "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
             "send_data_to_nrf":    self._send_data_to_nrf, 
-            "send_nrf_chank": self._send_nrf_chank,
+            "send_nrf_chunk": self._send_nrf_chunk,
             "stop_nrf_send": self._stop_nrf_send,
             "play_speaker": self._play_speaker,
             "start_speaker": self._start_speaker,
             "stop_speaker": self._stop_speaker,
+            "pop_back": self._back_to_prev_menu,
         }
+
+        # the menu folder for getting correct directory
+        self.menu_folder = None
 
     def execute(self, function_name: str, context: dict) -> bool:
         """
@@ -89,6 +93,10 @@ class FunctionManager:
         self.state_manager.reset_cursor()
         return True
 
+    def _back_to_prev_menu(self, who):
+        self.state_manager.pop_stack()
+        return True
+
     def _send_wifi(self, context: dict) -> bool:
         """rec button → send audio via wifi"""
         if self.wifi is None:
@@ -116,14 +124,14 @@ class FunctionManager:
         self.state_manager.is_nrf_sending = True
         self.nrf.set_power_speed(3, 2)
         filename = context["name"]
-        path = f"sd/recordings/{filename}"
+        path = f"/sd/{self.menu_folder}/{filename}"
         self._snd_file = open(path, "rb")
         self.nrf.open_tx_pipe(self.address)
         self.seq = 0
         print("START TX")
 
 
-    def _send_nrf_chank(self):
+    def _send_nrf_chunk(self):
         chunk = self._snd_file.read(28)  # 28 bytes of audio data
         
         if not chunk:
@@ -176,10 +184,10 @@ class FunctionManager:
         print("NRF RX READY")
         
         # self.state_manager.rec_destination = "nrf"
-        folder = "/sd/recordings"
+        folder = "/sd/received"
         self._ensure_folder(folder)
         index = self._get_next_index(folder)
-        path  = "/sd/recordings/huj.wav"
+        path  = f"{folder}/record_{index}.wav"
 
         self._rcv_file       = open(path, "wb")
         self._rcv_byte_count = 0
@@ -251,8 +259,7 @@ class FunctionManager:
     def _start_speaker(self, context: dict):
         self.speaker.init()
         self.state_manager.is_playing = True
-        path = f"/sd/recordings/{context["name"]}"
-        print(path)
+        path = f"/sd/{self.menu_folder}/{context['name']}"
         try:
             self._speaker_file = open(path, "rb")
             self._speaker_file.read(44)   # skip WAV header
@@ -299,15 +306,31 @@ class FunctionManager:
         return True
 
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
-        folder = "/sd/recordings"
+        """
+         if context is not "recording" or "received"
+         then  folder is "sd/recordings"
+         else  folder is "sd/" or "sd/received"
+        """
+
+        print("from get sd card data", context["name"])
+
+        print("function name:", function_name)
+
+        if context["name"] != "recordings" and context["name"] != "received":
+            folder ="/sd/recordings"
+        else:
+            folder = f"/sd/{context['name']}"
+            # write the menu folder name to state
+            self.menu_folder = context["name"]
+            print(self.menu_folder)
         try:
             names = os.listdir(folder)
         except OSError:
-            print(f"[FunctionManager] No recordings folder")
+            print(f"[FunctionManager] No {self.menu_folder} folder")
             return False
 
         rows = []
-        for name in sorted(names):
+        for name in names:
             if not name.lower().endswith(".wav"):
                 continue
             rows.append({
