@@ -8,14 +8,14 @@ from abc import ABC, abstractmethod
 import io
 
 # Base interface 
-# Every transcriber must implement this — swap implementations in server.py
+# Every transcriber must implement this: swap implementations in server.py
 class BaseTranscriber(ABC):
     @abstractmethod
     def transcribe(self, audio_bytes: bytes) -> str:
         """
         Receives raw audio bytes (WAV or PCM) and returns the transcribed text.
         """
-        pass
+        pass 
 
 
 # Faster-Whisper (local) 

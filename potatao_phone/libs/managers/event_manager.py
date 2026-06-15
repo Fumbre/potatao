@@ -2,6 +2,7 @@
 from machine import Pin
 from libs.conf.pins import PIN_BTN_AGREE, PIN_BTN_CANCEL, PIN_BTN_HOME, PIN_ENC_A, PIN_ENC_B, PIN_BTN_REC
 from libs.debounce.encoder_debounce import EncoderDebounce
+from libs.debounce.button_debounce import Debounce
 
 
 class EventManager:
@@ -25,23 +26,29 @@ class EventManager:
     def _setup_irqs(self):
         """Initializes raw button pins and configures async hardware interrupts."""
         # Setup push buttons
-        Pin(PIN_BTN_AGREE,  Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_agree)
-        Pin(PIN_BTN_CANCEL, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_cancel)
-        Pin(PIN_BTN_HOME,   Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_home)
-        Pin(PIN_BTN_REC,    Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._on_rec)
+        
+        #####
+        # Pin(PIN_BTN_AGREE,  Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_agree)
+        # Pin(PIN_BTN_CANCEL, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_cancel)
+        # Pin(PIN_BTN_HOME,   Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_home)
+        Pin(PIN_BTN_REC, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._on_rec)
+        self._btn_agree  = Debounce(PIN_BTN_AGREE, self._on_agree)
+        self._btn_cancel = Debounce(PIN_BTN_CANCEL, self._on_cancel)
+        self._btn_home = Debounce(PIN_BTN_HOME, self._on_home)
+        # self._btn_rec = Debounce(PIN_BTN_REC, self._on_rec, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
         
         # Setup rotary encoder debouncer, binding directly to an internal class callback
         self.encoder = EncoderDebounce(PIN_ENC_A, PIN_ENC_B, callback=self._on_encoder)
 
     # ── IRQ HANDLERS (Asynchronous Hardware Execution context) ──
     # Note: MicroPython IRQ handlers must access pre-allocated memory structures
-    def _on_agree(self, pin):
+    def _on_agree(self):
         self.flags["agree"] = True
 
-    def _on_cancel(self, pin):
+    def _on_cancel(self):
         self.flags["cancel"] = True
 
-    def _on_home(self, pin):
+    def _on_home(self):
         self.flags["home"] = True
 
     def _on_rec(self, pin):
@@ -78,7 +85,11 @@ class EventManager:
             # when we press button
             # when we unpress button
             # based on high or low we put it to state manager.is_recording
+
+
+            # pressed = Pin(PIN_BTN_REC).value() == 0 if True else False
             pressed = Pin(PIN_BTN_REC).value() == 0 if True else False
+
             self.state_manager.handle_recording(pressed)
             self.flags["ui_update"] = True
 
@@ -97,4 +108,5 @@ class EventManager:
             return True  # Signal to main loop that UI must re-render!
             
         return False  # No UI render changes needed
+    
     
