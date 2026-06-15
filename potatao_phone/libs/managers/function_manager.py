@@ -4,7 +4,6 @@ import struct
 from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
-import gc
 import struct
 from libs.communication.communication import ws_connect,ws_send,disconnect
 from libs.encrpytion.encryption import shake_hands
@@ -355,7 +354,7 @@ class FunctionManager:
         self.mic.init()                            # start I2S only after SD is done
         # print(f"[FunctionManager] Recording started → {path}")
         # exchange encryption key with zero
-        shake_hands()
+        shake_hands(prefered_language=self.state_manager.prefered_language)
         # open websocket connection
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
@@ -380,7 +379,9 @@ class FunctionManager:
         # self._rec_byte_count += length
         #create ws_send asyncio task
         if not self.queue.full():
-            packet = struct.pack(HEADER_FMT,0,b'test') + chunk
+            lang = self.state_manager.prefered_language
+            lang_bytes = lang.encode('utf-8')
+            packet = struct.pack(HEADER_FMT, 0x01, b'\x00' * 8) + chunk
             encrypted_data = encrypt_data(packet)
             self.queue.put_nowait(encrypted_data)
         

@@ -1,7 +1,7 @@
 # libs/managerss/state_manager.py
 
 class StateManager:
-    def __init__(self, function_manager = None):
+    def __init__(self, function_manager = None,prefered_language = "en"):
         self._stack   = []
         self._cursors = {1: 0}
         self.is_recording = False
@@ -11,6 +11,7 @@ class StateManager:
         self.is_playing = False
         self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
         self.function_manager = function_manager
+        self.prefered_language = prefered_language
 
     def push_stack(self, context: dict = {}):
         self._stack.append(context)

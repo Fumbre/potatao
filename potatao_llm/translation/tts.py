@@ -29,7 +29,7 @@ class PiperTTS(BaseTTS):
     # Maps language names to Piper voice model names
     # Add more as needed: https://rhasspy.github.io/piper-samples/
     VOICE_MAP = {
-        "English":    "en_US-r-medium",
+        "English":    "en_US-amy-medium",
         "French":     "fr_FR-upmc-medium",
         "German":     "de_DE-thorsten-medium",
         "Spanish":    "es_ES-carlfm-x_low",
@@ -43,7 +43,7 @@ class PiperTTS(BaseTTS):
     }
 
     # Default voice used when the target language has no mapping
-    DEFAULT_VOICE = "en_US-lessac-medium"
+    DEFAULT_VOICE = "en_US-amy-medium"
 
     def __init__(self):
         from piper.voice import PiperVoice
@@ -64,18 +64,12 @@ class PiperTTS(BaseTTS):
     def synthesize(self, text: str, language: str) -> bytes:
        voice = self._get_voice(language)
         
-        # 1. 直接获取 generator 产出的所有音频数据
        pcm_data = bytearray()
         
-        # 调用 Piper 库自带的 synthesize 生成器
        for audio_chunk in voice.synthesize(text):
-            # audio_chunk.audio_int16_bytes 存储了 PCM 数据
             pcm_data.extend(audio_chunk.audio_int16_bytes)
-            
-       print(f"[TTS DEBUG] PCM 数据总长度: {len(pcm_data)} 字节")
         
        if len(pcm_data) == 0:
-            print("[TTS ERROR] 推理引擎未能生成任何音频数据！")
             return b""
             
        return bytes(pcm_data)

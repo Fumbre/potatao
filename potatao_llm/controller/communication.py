@@ -19,16 +19,13 @@ async def health()->BaseResponse:
     return BaseResponse.success(data=data)
 
 
-@router.get("/shakeHand/{token}")
+@router.get("/shakeHand")
 async def shake_hands(token:str)->BaseResponse:
-    #decrypt token
     data = TokenUitl.decode_token(token=token)
-    #generate x25519 keypair
-    private_key, public_key =  X25519MUtil.generate_keypair()
-    #generate aes key
-    aes_key = X25519MUtil.generate_data_encrypting_key(private_key,data["pico_public_key"])
-    #put aes key into redis
-    RedisClient.set(f"aes_key:{data["target_id"]}",aes_key)
+    private_key, public_key = X25519MUtil.generate_keypair()
+    aes_key = X25519MUtil.generate_data_encrypting_key(private_key, data["pico_public_key"])
+    print(f"[LLM] aes_key={aes_key}")
+    RedisClient.set(f"aes_key:{data['target_id']}", aes_key)
     return BaseResponse.success(data=public_key)
 
 

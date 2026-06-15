@@ -36,4 +36,4 @@ class HttpUtil:
     @classmethod
     async def close(cls):
         if cls._instance is not None:
-           await cls._instance.aclose()
+           await cls._instance.close()

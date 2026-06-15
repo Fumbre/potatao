@@ -10,6 +10,7 @@ class PicoDeviceRequest(BaseModel):
 class PicoAuthentication(TypedDict):
     machine_id: str
     pico_public_key: str
+    prefered_language: str
 
 
 class CommunicationData(TypedDict):

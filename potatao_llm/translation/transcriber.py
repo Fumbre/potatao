@@ -36,7 +36,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
 
         print("[Transcriber] Model loaded.")
 
-    def transcribe(self, audio_bytes: bytes) -> str:
+    def transcribe(self, audio_bytes: bytes,language:str = None) -> str:
         """
         Transcribes audio bytes to text using Faster-Whisper.
         Audio must be WAV format (16-bit PCM, mono, 16kHz or 24kHz).
@@ -45,7 +45,7 @@ class FasterWhisperTranscriber(BaseTranscriber):
         audio_file = io.BytesIO(audio_bytes)
 
         # segments is a generator: iterate to get all transcribed text chunks
-        segments, _ = self.model.transcribe(audio_file)
+        segments, _ = self.model.transcribe(audio=audio_file,language=language)
 
         # Join all segments into a single string
         text = " ".join(segment.text for segment in segments).strip()

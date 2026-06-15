@@ -28,7 +28,7 @@ def register():
     response.close()
         
     
-def shake_hands():
+def shake_hands(prefered_language:str):
     global CONVERSATION_AES_KEY
     ## configuration information from env
     config = load_env()
@@ -38,7 +38,6 @@ def shake_hands():
     url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('PICO_REGISTERATION_CHECK_API','')}/{machine_id}"
     response:Response =  requests.get(url=url)
     if not bool(response.json()["data"]):
-        ## TODO: remind user register device firstly
         response.close()
         return
     response.close()
@@ -48,7 +47,8 @@ def shake_hands():
     secret_key = config.get("SECRET_KEY","")
     payload = {
         "machine_id":machine_id,
-        "pico_public_key":bytes_to_hex(public_key)
+        "pico_public_key":bytes_to_hex(public_key),
+        "prefered_language":prefered_language
     }
     token = jwt.create_token(ujson.dumps(payload),secret_key)
     data = {

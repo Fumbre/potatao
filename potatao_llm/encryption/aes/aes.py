@@ -1,6 +1,5 @@
 import json
 import os
-import secrets
 import threading
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
@@ -64,4 +63,18 @@ class AESUtil:
         unpadder = padding.PKCS7(128).unpadder()
         decrypted_bytes = unpadder.update(padded_data) + unpadder.finalize()
         return decrypted_bytes
+    
+    @classmethod
+    def encrypt_bytes(cls, key: str, data: bytes) -> bytes:
+        key_bytes = bytes.fromhex(key)
+        if len(key_bytes) not in [16, 24, 32]:
+            raise ValueError("the length of AES key must be 16, 24 and 32!")
 
+        iv = os.urandom(16)
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(data) + padder.finalize()
+
+        cipher = Cipher(algorithm=algorithms.AES(key=key_bytes), mode=modes.CBC(iv))
+        encryptor = cipher.encryptor()
+        cipher_text = encryptor.update(padded_data) + encryptor.finalize()
+        return iv + cipher_text

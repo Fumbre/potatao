@@ -26,5 +26,5 @@ async def lifespan(app:FastAPI):
     HttpUtil.init(base_url=settings.project.llm_url)
     print("potatao station start successfully!")
     yield
-    HttpUtil.close()
+    await HttpUtil.close()
     print("potatao station close successfully!")
