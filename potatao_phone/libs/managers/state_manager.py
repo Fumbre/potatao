@@ -19,7 +19,10 @@ class StateManager:
         # PART
         self.rec_destination = "sd" # "wifi" | "sd"
         self.function_manager = function_manager
-        self.prefered_language = 0x02 # "en" default - binary code of languages
+
+        # LANG
+        self.prefered_language = 'en' # "en" default - binary code of languages
+        self.prefered_language_binary = 0x02 # "en" default - binary code of languages
 
         # WIFI
         self.is_wifi_connecting = False

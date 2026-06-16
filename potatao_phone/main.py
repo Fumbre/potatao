@@ -130,7 +130,7 @@ loop.run_until_complete(_yield())
 try:
     while True:
         # when Mic is recording audio
-        if state_manager.is_recording:
+        if state_manager.is_recording and not state_manager.is_wifi_sending:
             function_manager.write_chunk() # after write chunk clear memory
 
         # connect to wifi and backend

@@ -13,7 +13,7 @@ from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
 from libs.encrpytion.encryption import register, encrypt_data,decrypt_data
-from libs.language.language_setting import init_language, LANGUAGE_DICT
+from libs.language.language_setting import init_language
 from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
 
@@ -75,6 +75,8 @@ class FunctionManager:
             "stop_speaker": self._stop_speaker,
             "pop_back": self._back_to_prev_menu,
             "link_wifi": self._link_wifi,
+            "change_language": self.change_language,
+            "set_language": self.set_language
         }
         
         ## define the data transmitation structure
@@ -82,6 +84,8 @@ class FunctionManager:
         ## define async task queue
         self.queue = SimpleQueue(maxsize=20)
         self.network_task = None
+
+        self.LANGUAGE_DICT = {}
 
         # the menu folder for getting correct directory
         self.menu_folder = None
@@ -138,17 +142,6 @@ class FunctionManager:
             self.state_manager.is_wifi_connecting = True
 
         return True
-    # def _send_wifi(self, context: dict) -> bool:
-    #     """rec button → send audio via wifi"""
-    #     if self.wifi is None:
-    #         print("[FunctionManager] WiFi not available")
-    #         return False
-        
-    #     self.wifi.connect()
-        
-    #     self.state_manager.rec_destination = "wifi"
-    #     return True
-
 
 
     def _send_nrf(self, context: dict):
@@ -461,9 +454,9 @@ class FunctionManager:
         """reigester pico device to zero"""
         # self.state_manager.rec_destination = "wifi"
 
-        # register()
+        register()
         
-        # init_language() # after connection
+        self.LANGUAGE_DICT = init_language() # after connection
 
 
     def recording_to_backend(self):
@@ -492,7 +485,8 @@ class FunctionManager:
         
         #create ws_send asyncio task
         if not self.queue.full():
-            lang = self.state_manager.prefered_language
+            lang = self.state_manager.prefered_language_binary
+            print(lang)
             packet = struct.pack(HEADER_FMT, lang, b'\x00' * 8) + chunk
             encrypted_data = encrypt_data(packet)
             self.queue.put_nowait(encrypted_data)
@@ -532,6 +526,7 @@ class FunctionManager:
             pass
     
     def stop_wifi_recording(self):
+        self.state_manager.is_wifi_sending = False
         ##stop async task
         self.network_task.cancel()
         self.network_task = None
@@ -554,6 +549,31 @@ class FunctionManager:
             self.BITS_PER_SAMPLE,
             b'data', data_size
         )
+
+    def change_language(self, context):
+        stck = []
+
+        for index, lang in enumerate(self.LANGUAGE_DICT):
+            stck.append({
+                'id': index,
+                'record_method': 'wifi',
+                'name': lang,
+                'parent_id': 0,
+                'function_name': 'set_language',
+                'binary_code': self.LANGUAGE_DICT[lang]['binary_code'],
+                'iso_code': self.LANGUAGE_DICT[lang]['iso_code'],
+            })
+        self.state_manager.push_stack(stck)
+        return True
+
+    def set_language(self, context):
+        print("set_language", context)
+
+        self.state_manager.prefered_language = context["iso_code"]
+        self.state_manager.prefered_language_binary = ord(context["binary_code"])
+
+        self.state_manager.pop_stack()
+        return True
 
     def _ensure_folder(self, path: str):
         """creates folder if it doesn't exist"""

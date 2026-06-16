@@ -15,7 +15,7 @@ CONVERSATION_AES_KEY = None
 def register():
     ## configuration information from env
     config = load_env()
-    secret_key: = config.get("SECRET_KEY")
+    secret_key = config.get("SECRET_KEY")
     ## get pico machine id
     machine_id = get_machine_id()
     data = {"machine_id":machine_id}

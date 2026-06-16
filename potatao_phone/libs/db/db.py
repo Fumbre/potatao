@@ -38,6 +38,7 @@ def db_create(db):
         (13, 10, 'recordings', 1, 'send_nrf', 'sd'),
         (14, 10, 'received', 1, 'send_nrf', 'sd'),
         (15, 1, 'chat',  0, 'receive_translate_auido', 'wifi'),
+        (16, 1, 'set language',  1, 'change_language', 'wifi'),
     ]
 
     # Dynamic SQL string construction for usqlite
