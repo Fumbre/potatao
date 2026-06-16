@@ -26,6 +26,7 @@ class StateManager:
         self.is_wifi_connected = False
         self.is_wifi_sending  = False
         self.is_wifi_receiving  = False
+        
 
     def push_stack(self, context: dict = {}):
         self._stack.append(context)

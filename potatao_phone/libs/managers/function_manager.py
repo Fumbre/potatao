@@ -6,44 +6,16 @@ from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
 import struct
-from libs.communication.communication import ws_connect,ws_send,disconnect
+from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive
 from libs.encrpytion.encryption import shake_hands
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
-from libs.encrpytion.encryption import register, encrypt_data
+from libs.encrpytion.encryption import register, encrypt_data,decrypt_data
 from libs.language.language_setting import init_language, LANGUAGE_DICT
+from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
-
-
-HEADER_FMT = '<B8s'
-
-class SimpleQueue:
-    def __init__(self, maxsize):
-        self.maxsize = maxsize
-        self.items = []
-        self.evt = uasyncio.Event()
-
-    # get last item
-    async def get(self):
-        while not self.items:
-            await self.evt.wait()
-        return self.items.pop(0)
-
-    # append items as much as free space exist
-    # and put later items when the space will be free
-    def put_nowait(self, item):
-        if len(self.items) < self.maxsize:
-            self.items.append(item)
-            self.evt.set()
-        
-    def full(self):
-        return len(self.items) >= self.maxsize
-    
-    def task_done(self):
-        if not self.items:
-            self.evt.clear()
 
 
 class FunctionManager:
@@ -323,18 +295,34 @@ class FunctionManager:
         print(f"DONE")
 
 
-    def receive_translate_auido(self, context: dict):
-        # TODO
+    def start_receive_translate_auido(self):
         # - connect to websocket
-        # - receive data from websocket
-        # - decrypt data from backend
-        # - play real audio on speaker
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(ws_connect())
+        self.speaker.init()
+        self.state_manager.is_wifi_receiving = True
         # - if playing on speaker is impossible or bad
         # - put the received data to sd card
-        self.speaker.init()
-        self.state_manager.is_playing = True
-
-
+        
+    
+    def receiving_translated_audio(self):
+        #receive data from websocket
+        loop = uasyncio.get_event_loop()
+        orginal_data = loop.run_until_complete(ws_receive())
+        # decrypt data
+        raw_audio = decrypt_data(orginal_data)
+        # play audio with speaker
+        self.speaker.play_chunk(raw_audio)
+    
+    def stop_receive_translated_audio(self):
+        ## close websocket connection
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(disconnect())
+        #deinit speaker
+        self.speaker.deinit()
+        self.state_manager.is_wifi_receiving = False    
+           
+    
     
     def _start_speaker(self, context: dict):
         self.speaker.init()
@@ -548,7 +536,6 @@ class FunctionManager:
         self.network_task.cancel()
         self.network_task = None
         ##  websocket disconnection
-        
         uasyncio.get_event_loop().run_until_complete(disconnect())
 
     def _make_wav_header(self, data_size: int) -> bytes:

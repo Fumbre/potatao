@@ -3,6 +3,7 @@ from libs.conf.env import load_env
 from libs.encrpytion.encryption import encrypt_data,decrypt_data,get_machine_id
 import requests
 import uasyncio
+from libs.managers.queue import SimpleQueue
 
 client = AsyncWebsocketClient()
 config = load_env()
@@ -23,7 +24,7 @@ async def ws_connect():
        
 
 
-async def ws_send(queue):  
+async def ws_send(queue:SimpleQueue):  
     while True:
         data = await queue.get()
         try:
@@ -34,6 +35,13 @@ async def ws_send(queue):
             print("ws send error:",e)
         finally:
             queue.task_done()
+
+
+async def ws_receive():
+    if client and client._open:
+        data = await client.recv()
+        return data
+    return b""    
         
 
 async def disconnect():

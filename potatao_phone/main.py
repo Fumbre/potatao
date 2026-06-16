@@ -155,7 +155,10 @@ try:
         # audio is playing to speakers
         elif state_manager.is_playing:
              function_manager._play_speaker()
-
+             
+        # listen translated audio     
+        elif state_manager.is_wifi_receiving:
+            function_manager.receiving_translated_audio()     
         # nothing in state manager going
         # let processor rest
         else:
