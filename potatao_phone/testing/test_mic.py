@@ -1,3 +1,7 @@
+import sys
+from libs.mic.mic import Mic
+
+
 class FakeI2S:
     RX = "RX"; MONO = "MONO"
     def __init__(self, *a, **kw):
@@ -19,16 +23,12 @@ class FakePin:
     def __init__(self, n): 
         pass
 
-import sys
 sys.modules['machine'] = type(sys)('machine')
 sys.modules['machine'].I2S = FakeI2S
 sys.modules['machine'].Pin = FakePin
 sys.modules['mic_dsp'] = type(sys)('mic_dsp')
 sys.modules['mic_dsp'].convert = lambda src, dst, gain: 512
 
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'libs', 'mic'))
-from mic import Mic
 
 mic = Mic(0, 10, 11, 12)
 

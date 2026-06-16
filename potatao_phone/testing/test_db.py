@@ -1,6 +1,6 @@
-import sqlite3
+import usqlite
 
-db = sqlite3.connect(":memory:")
+db = usqlite.connect("/sd/test.db")
 
 # create table
 db.execute("""CREATE TABLE IF NOT EXISTS potatao_ui (

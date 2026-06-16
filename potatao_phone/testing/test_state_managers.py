@@ -1,6 +1,5 @@
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'libs', 'managers'))
-from state_manager import StateManager
+import sys
+from libs.managers.state_manager import StateManager
 
 class FakeFunctionManager:
     def execute(self, fn, item): 

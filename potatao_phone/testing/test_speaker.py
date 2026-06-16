@@ -1,3 +1,7 @@
+import sys
+from libs.speaker.speaker import Speaker
+
+
 class FakeI2S:
     TX = "TX"; MONO = "MONO"
     def __init__(self, *a, **kw):
@@ -19,14 +23,10 @@ class FakePin:
     def __init__(self, n): 
         pass
 
-import sys
 sys.modules['machine'] = type(sys)('machine')
 sys.modules['machine'].I2S = FakeI2S
 sys.modules['machine'].Pin = FakePin
 
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'libs', 'speaker'))
-from speaker import Speaker
 
 sp = Speaker(1, 16, 17, 18)
 
