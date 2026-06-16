@@ -76,7 +76,8 @@ class FunctionManager:
             "pop_back": self._back_to_prev_menu,
             "link_wifi": self._link_wifi,
             "change_language": self.change_language,
-            "set_language": self.set_language
+            "set_language": self.set_language,
+            "receive_translate_auido": self.start_receive_translate_audio
         }
         
         ## define the data transmitation structure
@@ -288,7 +289,7 @@ class FunctionManager:
         print(f"DONE")
 
 
-    def start_receive_translate_auido(self):
+    def start_receive_translate_audio(self, context):
         # - connect to websocket
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
