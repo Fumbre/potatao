@@ -150,6 +150,7 @@ try:
         # audio is playing to speakers
         elif state_manager.is_playing:
              function_manager._play_speaker()
+ 
 
         # nothing in state manager going
         # let processor rest

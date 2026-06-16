@@ -6,44 +6,16 @@ from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
 import struct
-from libs.communication.communication import ws_connect,ws_send,disconnect
+from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive
 from libs.encrpytion.encryption import shake_hands
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
-from libs.encrpytion.encryption import register, encrypt_data
+from libs.encrpytion.encryption import register, encrypt_data,decrypt_data
 from libs.language.language_setting import init_language
+from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
-
-
-HEADER_FMT = '<B8s'
-
-class SimpleQueue:
-    def __init__(self, maxsize):
-        self.maxsize = maxsize
-        self.items = []
-        self.evt = uasyncio.Event()
-
-    # get last item
-    async def get(self):
-        while not self.items:
-            await self.evt.wait()
-        return self.items.pop(0)
-
-    # append items as much as free space exist
-    # and put later items when the space will be free
-    def put_nowait(self, item):
-        if len(self.items) < self.maxsize:
-            self.items.append(item)
-            self.evt.set()
-        
-    def full(self):
-        return len(self.items) >= self.maxsize
-    
-    def task_done(self):
-        if not self.items:
-            self.evt.clear()
 
 
 class FunctionManager:
@@ -111,7 +83,9 @@ class FunctionManager:
         self.data = {}
         ## define async task queue
         self.queue = SimpleQueue(maxsize=20)
+        self.receive_queue = SimpleQueue(maxsize=20)
         self.network_task = None
+        self.receive_task = None
 
         # the menu folder for getting correct directory
         self.menu_folder = None
@@ -326,15 +300,15 @@ class FunctionManager:
 
 
     def receive_translate_auido(self, context: dict):
-        # TODO
         # - connect to websocket
-        # - receive data from websocket
-        # - decrypt data from backend
-        # - play real audio on speaker
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(ws_connect())
         # - if playing on speaker is impossible or bad
         # - put the received data to sd card
         self.speaker.init()
         self.state_manager.is_playing = True
+        ## create receive data_task
+        self.receive_task = loop.create_task(ws_receive(self.receive_queue))
 
 
     

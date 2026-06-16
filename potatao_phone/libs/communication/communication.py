@@ -34,6 +34,16 @@ async def ws_send(queue):
             print("ws send error:",e)
         finally:
             queue.task_done()
+
+
+async def ws_receive(queue):
+    while True:
+        try:
+            if client and client._open:
+                data = await client.recv()
+                queue.put()
+        except Exception as e:
+            print("ws receive error:",e)
         
 
 async def disconnect():

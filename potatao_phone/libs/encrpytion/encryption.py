@@ -98,18 +98,17 @@ def encrypt_data(payload:bytes)->bytes:
     return iv + cipher_text
 
 
-def decrypt_data(data:str)->dict:
+def decrypt_data(data: bytes) -> bytes:
     global CONVERSATION_AES_KEY
     if CONVERSATION_AES_KEY is None:
-        return {}
+        return b''
     if not data:
-        return {}
+        return b''
     aes_key = ubinascii.unhexlify(CONVERSATION_AES_KEY)
-    raw_data_package = ubinascii.unhexlify(data)
-    iv = raw_data_package[:16]
-    cipher_text = raw_data_package[16:]
+    iv = data[:16]
+    cipher_text = data[16:]
     aes_cipher = cryptolib.aes(aes_key, 2, iv)
-    decryted_pad = aes_cipher.decrypt(cipher_text)
-    pad_len = decryted_pad[-1]
-    raw_data_binary = decryted_pad[:-pad_len]
-    return ujson.loads(raw_data_binary.decode("utf-8"))
+    decrypted_pad = aes_cipher.decrypt(cipher_text)
+    pad_len = decrypted_pad[-1]
+    raw_data_binary = decrypted_pad[:-pad_len]
+    return raw_data_binary
