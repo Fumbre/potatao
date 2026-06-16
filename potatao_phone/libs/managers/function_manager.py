@@ -13,7 +13,7 @@ from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
 from libs.encrpytion.encryption import register, encrypt_data,decrypt_data
-from libs.language.language_setting import init_language
+from libs.language.language_setting import init_language, LANGUAGE_DICT
 from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
 
@@ -64,7 +64,6 @@ class FunctionManager:
         # registry — name -> methods
         self._registry = {
             "link":           self._link,
-            "send_wifi":      self._send_wifi,
             "send_nrf":       self._send_nrf,
             "receive_nrf":    self._receive_nrf,
             "write_sd":       self._write_sd,
@@ -83,9 +82,7 @@ class FunctionManager:
         self.data = {}
         ## define async task queue
         self.queue = SimpleQueue(maxsize=20)
-        self.receive_queue = SimpleQueue(maxsize=20)
         self.network_task = None
-        self.receive_task = None
 
         # the menu folder for getting correct directory
         self.menu_folder = None
@@ -299,18 +296,34 @@ class FunctionManager:
         print(f"DONE")
 
 
-    def receive_translate_auido(self, context: dict):
+    def start_receive_translate_auido(self):
         # - connect to websocket
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
+        self.speaker.init()
+        self.state_manager.is_wifi_receiving = True
         # - if playing on speaker is impossible or bad
         # - put the received data to sd card
-        self.speaker.init()
-        self.state_manager.is_playing = True
-        ## create receive data_task
-        self.receive_task = loop.create_task(ws_receive(self.receive_queue))
-
-
+        
+    
+    def receiving_translated_audio(self):
+        #receive data from websocket
+        loop = uasyncio.get_event_loop()
+        orginal_data = loop.run_until_complete(ws_receive())
+        # decrypt data
+        raw_audio = decrypt_data(orginal_data)
+        # play audio with speaker
+        self.speaker.play_chunk(raw_audio)
+    
+    def stop_receive_translated_audio(self):
+        ## close websocket connection
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(disconnect())
+        #deinit speaker
+        self.speaker.deinit()
+        self.state_manager.is_wifi_receiving = False    
+           
+    
     
     def _start_speaker(self, context: dict):
         self.speaker.init()
@@ -455,11 +468,11 @@ class FunctionManager:
         """reigester pico device to zero"""
         self.state_manager.rec_destination = "wifi"
         register()
+        
         init_language() # after connection
 
 
     def recording_to_backend(self):
-        # SUNNY CODE IS BELOW
         self.mic.init()
         
         # exchange encryption key with zero
@@ -467,9 +480,12 @@ class FunctionManager:
         # open websocket connection
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
-        self.network_task = loop.create_task(ws_send(self.queue))         
+        self.network_task = loop.create_task(ws_send(self.queue))
+
+        # change state to wifi sending
+        self.state_manager.is_wifi_sending = True
                 
-    def _send_wifi(self):
+    def send_wifi_chunk(self):
         """send a chunk by wifi — called every loop while recording"""
         if self.mic is None:
             return
@@ -522,13 +538,10 @@ class FunctionManager:
             pass
     
     def stop_wifi_recording(self):
-        # SUNNY CODE IS BELOW
-        
         ##stop async task
         self.network_task.cancel()
         self.network_task = None
         ##  websocket disconnection
-        
         uasyncio.get_event_loop().run_until_complete(disconnect())
 
     def _make_wav_header(self, data_size: int) -> bytes:
