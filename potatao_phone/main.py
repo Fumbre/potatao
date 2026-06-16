@@ -133,11 +133,16 @@ try:
         if state_manager.is_recording:
             function_manager.write_chunk() # after write chunk clear memory
 
+        # connect to wifi and backend
         elif state_manager.is_wifi_connecting:
             is_connected = function_manager.wifi_connect()
             if is_connected:
                 ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
-                function_manager.connect_to_backend()
+                function_manager.connect_to_backend() # connect to backend
+
+        # send audio stream to backend
+        elif state_manager.is_wifi_sending:
+            function_manager.send_wifi_chunk()
 
         # nrf send an audio file
         elif state_manager.is_nrf_sending:

@@ -13,7 +13,7 @@ from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
 from libs.encrpytion.encryption import register, encrypt_data
-from libs.language.language_setting import init_language
+from libs.language.language_setting import init_language, LANGUAGE_DICT
 import utime
 
 
@@ -92,7 +92,6 @@ class FunctionManager:
         # registry — name -> methods
         self._registry = {
             "link":           self._link,
-            "send_wifi":      self._send_wifi,
             "send_nrf":       self._send_nrf,
             "receive_nrf":    self._receive_nrf,
             "write_sd":       self._write_sd,
@@ -481,11 +480,11 @@ class FunctionManager:
         """reigester pico device to zero"""
         self.state_manager.rec_destination = "wifi"
         register()
+        
         init_language() # after connection
 
 
     def recording_to_backend(self):
-        # SUNNY CODE IS BELOW
         self.mic.init()
         
         # exchange encryption key with zero
@@ -493,9 +492,12 @@ class FunctionManager:
         # open websocket connection
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
-        self.network_task = loop.create_task(ws_send(self.queue))         
+        self.network_task = loop.create_task(ws_send(self.queue))
+
+        # change state to wifi sending
+        self.state_manager.is_wifi_sending = True
                 
-    def _send_wifi(self):
+    def send_wifi_chunk(self):
         """send a chunk by wifi — called every loop while recording"""
         if self.mic is None:
             return
@@ -548,8 +550,6 @@ class FunctionManager:
             pass
     
     def stop_wifi_recording(self):
-        # SUNNY CODE IS BELOW
-        
         ##stop async task
         self.network_task.cancel()
         self.network_task = None

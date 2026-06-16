@@ -24,9 +24,13 @@ class StateManager:
         # WIFI
         self.is_wifi_connecting = False
         self.is_wifi_connected = False
+        self.is_wifi_sending  = False
         self.is_wifi_receiving  = False
 
     def push_stack(self, context: dict = {}):
+        if len(self._stack) > 1 and self._stack[1]:
+            print(self._stack[1])
+            
         self._stack.append(context)
 
     def pop_stack(self):
@@ -114,9 +118,11 @@ class StateManager:
         if self.depth() > 1:
             self._stack   = [self._stack[0]]
             self._cursors = {1: 0}
+            self.rec_destination = "sd"
             return True
         if self.depth() == 1:
             self._cursors = {1: 0}
+            self.rec_destination = "sd"
             return True 
         return False
     
@@ -124,13 +130,22 @@ class StateManager:
         if self.is_playing:
             self.function_manager._stop_speaker()
         
-        if pressed and not self.is_recording:
+        if pressed and not self.is_recording and self.rec_destination == "sd":
             self.is_recording = True
             self.function_manager.start_recording()
 
-        elif not pressed and self.is_recording:
+        elif not pressed and self.is_recording and self.rec_destination == "sd":
             self.is_recording = False
             self.function_manager.stop_recording()
+
+        if pressed and not self.is_recording and self.rec_destination == "wifi":
+            self.is_recording = True
+            self.function_manager.recording_to_backend()
+
+        elif not pressed and self.is_recording and self.rec_destination == "wifi":
+            self.is_recording = False
+            self.function_manager.stop_wifi_recording()
+        
 
 
     # ── DEBUG ────────────────────────────────────────────
@@ -139,5 +154,5 @@ class StateManager:
         print(f"Stack depth: {self.depth()}")
         for i, (ctx) in enumerate(self._stack):
             print(f"  [{i}] {ctx}")
-        print(f"  cursor={self.cursor()} recording={self.is_recording}")
+        print(f"  cursor={self.cursor()} recording={self.is_recording} path={self.rec_destination}")
         # print(f"  list={self._list}") view list of rendered item
