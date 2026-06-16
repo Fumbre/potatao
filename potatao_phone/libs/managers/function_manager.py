@@ -94,7 +94,6 @@ class FunctionManager:
             "link":           self._link,
             "send_nrf":       self._send_nrf,
             "receive_nrf":    self._receive_nrf,
-            "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
             "send_data_to_nrf":    self._send_data_to_nrf, 
             "send_nrf_chunk": self._send_nrf_chunk,
@@ -380,12 +379,6 @@ class FunctionManager:
             pass
 
 
-
-
-    def _write_sd(self, context: dict) -> bool:
-        self.state_manager.rec_destination = "sd"
-        return True
-
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
         """
          if context is not "recording" or "received"
@@ -478,10 +471,11 @@ class FunctionManager:
 
     def connect_to_backend(self):
         """reigester pico device to zero"""
-        self.state_manager.rec_destination = "wifi"
-        register()
+        # self.state_manager.rec_destination = "wifi"
+
+        # register()
         
-        init_language() # after connection
+        # init_language() # after connection
 
 
     def recording_to_backend(self):

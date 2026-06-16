@@ -28,9 +28,6 @@ class StateManager:
         self.is_wifi_receiving  = False
 
     def push_stack(self, context: dict = {}):
-        if len(self._stack) > 1 and self._stack[1]:
-            print(self._stack[1])
-            
         self._stack.append(context)
 
     def pop_stack(self):
@@ -118,17 +115,19 @@ class StateManager:
         if self.depth() > 1:
             self._stack   = [self._stack[0]]
             self._cursors = {1: 0}
-            self.rec_destination = "sd"
             return True
         if self.depth() == 1:
             self._cursors = {1: 0}
-            self.rec_destination = "sd"
             return True 
         return False
     
     def handle_recording(self, pressed: bool):
         if self.is_playing:
             self.function_manager._stop_speaker()
+
+        current_item = self.current_stack()
+
+        self.rec_destination = current_item[0]["record_method"]
         
         if pressed and not self.is_recording and self.rec_destination == "sd":
             self.is_recording = True

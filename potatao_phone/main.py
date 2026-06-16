@@ -40,7 +40,7 @@ sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-#os.remove("/sd/potatao.db")
+# os.remove("/sd/potatao.db")
 
 # Display setup
 ui = UI()
