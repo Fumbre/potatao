@@ -22,7 +22,7 @@ def db_create(db):
 
     # Define default dataset
     default_items = [
-        (1, 0, 'WiFi mess',  0, 'link'),
+        (1, 0, 'WiFi mess',  0, 'link_wifi'),
         (2, 0, 'NRF mess',   1, 'link'),
         (3, 0, 'SD Card',    2, 'link'),
         (4, 0, 'Settings',   3, 'link'),
@@ -36,6 +36,7 @@ def db_create(db):
         (12, 3, 'received',    1, 'get_sdcard_data'),
         (13, 10, 'recordings', 1, 'send_nrf'),
         (14, 10, 'received', 1, 'send_nrf'),
+        (15, 1, 'chat',  0, 'receive_translate_auido'),
     ]
 
     # Dynamic SQL string construction for usqlite

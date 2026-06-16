@@ -12,8 +12,9 @@ from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
-from libs.encrpytion.encryption import encrypt_data
-
+from libs.encrpytion.encryption import register, encrypt_data
+from libs.language.language_setting import init_language
+import utime
 
 
 HEADER_FMT = '<B8s'
@@ -24,11 +25,14 @@ class SimpleQueue:
         self.items = []
         self.evt = uasyncio.Event()
 
+    # get last item
     async def get(self):
         while not self.items:
             await self.evt.wait()
         return self.items.pop(0)
 
+    # append items as much as free space exist
+    # and put later items when the space will be free
     def put_nowait(self, item):
         if len(self.items) < self.maxsize:
             self.items.append(item)
@@ -100,6 +104,7 @@ class FunctionManager:
             "start_speaker": self._start_speaker,
             "stop_speaker": self._stop_speaker,
             "pop_back": self._back_to_prev_menu,
+            "link_wifi": self._link_wifi,
         }
         
         ## define the data transmitation structure
@@ -144,16 +149,35 @@ class FunctionManager:
         self.state_manager.pop_stack()
         return True
 
-    def _send_wifi(self, context: dict) -> bool:
-        """rec button → send audio via wifi"""
-        if self.wifi is None:
-            print("[FunctionManager] WiFi not available")
+
+    def _link_wifi(self, item: dict) -> bool:
+        """Show notification right after a link that wifi is connecting"""
+        parent_id = item["id"]
+        rows = get_view(self.db, parent_id, "/sd/potatao.db")
+
+        if not rows:
+            print(f"[FunctionManager] No children for id {parent_id}")
             return False
-        
-        self.wifi.connect()
-        
-        self.state_manager.rec_destination = "wifi"
+
+
+        self.state_manager.push_stack(rows)
+        self.state_manager.reset_cursor()
+
+        print("we are here")
+        if not self.state_manager.is_wifi_connected:
+            self.state_manager.is_wifi_connecting = True
+
         return True
+    # def _send_wifi(self, context: dict) -> bool:
+    #     """rec button → send audio via wifi"""
+    #     if self.wifi is None:
+    #         print("[FunctionManager] WiFi not available")
+    #         return False
+        
+    #     self.wifi.connect()
+        
+    #     self.state_manager.rec_destination = "wifi"
+    #     return True
 
 
 
@@ -301,6 +325,17 @@ class FunctionManager:
         print(f"DONE")
 
 
+    def receive_translate_auido(self, context: dict):
+        # TODO
+        # - connect to websocket
+        # - receive data from websocket
+        # - decrypt data from backend
+        # - play real audio on speaker
+        # - if playing on speaker is impossible or bad
+        # - put the received data to sd card
+        self.speaker.init()
+        self.state_manager.is_playing = True
+
 
     
     def _start_speaker(self, context: dict):
@@ -434,9 +469,25 @@ class FunctionManager:
         self.mic.init()                            # start I2S only after SD is done
         # print(f"[FunctionManager] Recording started → {path}")
 
-        
-        # SUNNY CODE IS BELOW
+    def wifi_connect(self): 
+        self.state_manager.is_wifi_connected = self.wifi.connect()
+        self.state_manager.is_wifi_connecting = not self.state_manager.is_wifi_connected
 
+        if self.state_manager.is_wifi_connected :
+            print('we are connected')
+        return self.state_manager.is_wifi_connected
+
+    def connect_to_backend(self):
+        """reigester pico device to zero"""
+        self.state_manager.rec_destination = "wifi"
+        register()
+        init_language() # after connection
+
+
+    def recording_to_backend(self):
+        # SUNNY CODE IS BELOW
+        self.mic.init()
+        
         # exchange encryption key with zero
         shake_hands(prefered_language=self.state_manager.prefered_language)
         # open websocket connection
@@ -444,30 +495,36 @@ class FunctionManager:
         loop.run_until_complete(ws_connect())
         self.network_task = loop.create_task(ws_send(self.queue))         
                 
-              
-            
-     
-
-    def write_chunk(self):
-        """write one mic chunk — called every loop while recording"""
-        # if self.mic is None or self._rec_file is None:
-        #     return
+    def _send_wifi(self):
+        """send a chunk by wifi — called every loop while recording"""
         if self.mic is None:
             return
+        
         raw_slice = self.mic.process()
+
         if not raw_slice or len(raw_slice) <= 0:
             return
         chunk = bytes(raw_slice)
         
-        # self._rec_file.write(chunk)
-        # self._rec_byte_count += length
         #create ws_send asyncio task
         if not self.queue.full():
             lang = self.state_manager.prefered_language
-            lang_bytes = lang.encode('utf-8')
-            packet = struct.pack(HEADER_FMT, 0x01, b'\x00' * 8) + chunk
+            packet = struct.pack(HEADER_FMT, lang, b'\x00' * 8) + chunk
             encrypted_data = encrypt_data(packet)
             self.queue.put_nowait(encrypted_data)
+            
+
+    def write_chunk(self):
+        """write one mic chunk — called every loop while recording"""
+        if self.mic is None or self._rec_file is None:
+            return
+
+        chunk = self.mic.process()
+        if chunk is None:
+            return
+
+        self._rec_file.write(chunk)
+        self._rec_byte_count += len(chunk)
         
 
     def stop_recording(self):
@@ -489,8 +546,8 @@ class FunctionManager:
             os.sync()
         except:
             pass
-
-
+    
+    def stop_wifi_recording(self):
         # SUNNY CODE IS BELOW
         
         ##stop async task

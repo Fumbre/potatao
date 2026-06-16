@@ -26,16 +26,11 @@ class EventManager:
     def _setup_irqs(self):
         """Initializes raw button pins and configures async hardware interrupts."""
         # Setup push buttons
-        
-        #####
-        # Pin(PIN_BTN_AGREE,  Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_agree)
-        # Pin(PIN_BTN_CANCEL, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_cancel)
-        # Pin(PIN_BTN_HOME,   Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING, handler=self._on_home)
+
         Pin(PIN_BTN_REC, Pin.IN, Pin.PULL_UP).irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._on_rec)
         self._btn_agree  = Debounce(PIN_BTN_AGREE, self._on_agree)
         self._btn_cancel = Debounce(PIN_BTN_CANCEL, self._on_cancel)
         self._btn_home = Debounce(PIN_BTN_HOME, self._on_home)
-        # self._btn_rec = Debounce(PIN_BTN_REC, self._on_rec, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
         
         # Setup rotary encoder debouncer, binding directly to an internal class callback
         self.encoder = EncoderDebounce(PIN_ENC_A, PIN_ENC_B, callback=self._on_encoder)

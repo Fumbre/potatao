@@ -16,10 +16,6 @@ from libs.managers.event_manager import EventManager
 from libs.managers.state_manager import StateManager
 from libs.managers.function_manager import FunctionManager
 
-from libs.encrpytion.encryption import register
-
-from libs.language.language_setting import init_language
-
 import utime
 import os
 import gc
@@ -28,6 +24,7 @@ from machine import Pin, SPI
 
 import uasyncio
 
+# this a async loop
 loop = uasyncio.get_event_loop()
 
 gc.collect()
@@ -43,7 +40,7 @@ sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-# os.remove("/sd/potatao.db")
+#os.remove("/sd/potatao.db")
 
 # Display setup
 ui = UI()
@@ -67,7 +64,7 @@ config = load_env()
 
 # setup Wifi
 wifi = Wifi(config.get("SSID", "") , config.get("WIFI_PASSWORD", ""))
-wifi.connect()
+# wifi.connect()
 
 #setup Mic
 mic = Mic(0, PIN_MIC_SCK, PIN_MIC_WS, PIN_MIC_SD)
@@ -109,7 +106,7 @@ event_manager = EventManager(state_manager)
 function_manager = FunctionManager(
     state_manager = state_manager,
     db            = db,
-    wifi          = None,
+    wifi          = wifi,
     nrf           = nrf,     
     mic           = mic,
     sd            = sd,
@@ -122,11 +119,6 @@ state_manager.function_manager = function_manager
 view_list = get_view(db, 0)
 state_manager.push_stack(view_list)
 
-# ------------  reigester pico device to zero ------
-register()
-# get language data from zero
-init_language()
-
 # ── MAIN LOOP ────────────────────────────────────────────
 
 
@@ -137,17 +129,34 @@ loop.run_until_complete(_yield())
 
 try:
     while True:
+        # when Mic is recording audio
         if state_manager.is_recording:
             function_manager.write_chunk() # after write chunk clear memory
+
+        elif state_manager.is_wifi_connecting:
+            is_connected = function_manager.wifi_connect()
+            if is_connected:
+                ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
+                function_manager.connect_to_backend()
+
+        # nrf send an audio file
         elif state_manager.is_nrf_sending:
             function_manager._send_nrf_chunk()
+        
+        # nrf receive 
         elif state_manager.is_nrf_receiving:
             function_manager._receive_nrf_chunk()
+
+        # audio is playing to speakers
         elif state_manager.is_playing:
              function_manager._play_speaker()
+
+        # nothing in state manager going
+        # let processor rest
         else:
             utime.sleep_ms(15)
         
+        # 
         loop.run_until_complete(_yield())
             
         if event_manager.process():
@@ -155,7 +164,9 @@ try:
             ui.rerender(state_manager.current_stack(), state_manager.cursor(), state_manager.get_scroll_offset())
             if state_manager.is_recording:
                 ui.notify(state_manager.rec_destination, "Recording...")
-            # state_manager.debug()
+            if state_manager.is_wifi_connecting:
+                ui.notify("Wifi is", "Connecting...")
+            state_manager.debug()
 
         
 

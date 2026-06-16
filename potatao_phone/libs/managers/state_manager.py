@@ -1,17 +1,30 @@
 # libs/managerss/state_manager.py
 
 class StateManager:
-    def __init__(self, function_manager = None, prefered_language = "en"):
+    def __init__(self, function_manager = None):
+        # UI
         self._stack   = []
         self._cursors = {1: 0}
+
+        # MIC
         self.is_recording = False
-        self.is_receiving  = False        
+
+        # NRF
         self.is_nrf_sending = False
         self.is_nrf_receiving = False
+
+        # SPEAKER
         self.is_playing = False
-        self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
+
+        # PART
+        self.rec_destination = "sd" # "wifi" | "sd"
         self.function_manager = function_manager
-        self.prefered_language = prefered_language
+        self.prefered_language = 0x02 # "en" default - binary code of languages
+
+        # WIFI
+        self.is_wifi_connecting = False
+        self.is_wifi_connected = False
+        self.is_wifi_receiving  = False
 
     def push_stack(self, context: dict = {}):
         self._stack.append(context)
