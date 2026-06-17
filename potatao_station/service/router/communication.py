@@ -85,18 +85,19 @@ async def translation_worker(machine_id: str, queue: Queue, translation_queue: Q
         print(f"!!! Translation Worker Crashed: {e}")
 
 
-async def translated_sender(machine_id:str,manager:WebsocketManager,aes_key:str,queue:Queue):
+async def translated_sender(machine_id:str,manager:WebsocketManager,queue:Queue):
     languages:dict = json.loads(RedisClient.get("user_language"))
     while True:
         data = await queue.get()
         if data is None:
             break
         binary_code, audio_data = data
-        encrypted_data:bytes = AESUtil.encrypt_bytes(aes_key, audio_data)
         sessions =  manager.active_sessions
         for machine in sessions:
             if machine != machine_id:
                 if languages[machine]["binary_code"] == binary_code:
+                    aes_key = json.loads(RedisClient.get(f"receive_aes_key:{machine}"))
+                    encrypted_data = AESUtil.encrypt_bytes(aes_key, audio_data)
                     await sessions[machine].send_bytes(encrypted_data)
         queue.task_done()
 

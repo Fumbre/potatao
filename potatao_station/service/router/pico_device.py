@@ -105,5 +105,12 @@ async def receive_hand_shake(pico_auth:PicoDeviceRequest,db:Session = Depends(DB
     return BaseResponse.success(data=public_key)
 
 
+@router.post("/receive/disconnet/{machine_id}")
+async def receive_disconnect(machine_id:str)->BaseResponse:
+    await manager.disconnect(machine_id)
+    RedisClient.delete(f"receive_pico_data_key:{machine_id}")
+    return BaseResponse.success()
+
+
 
 

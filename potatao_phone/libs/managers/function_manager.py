@@ -6,7 +6,7 @@ from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
 import struct
-from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive
+from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive,receive_disconnect
 from libs.encrpytion.encryption import shake_hands,receive_hand_shake
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
@@ -316,6 +316,7 @@ class FunctionManager:
         loop.run_until_complete(disconnect())
         #deinit speaker
         self.speaker.deinit()
+        loop.run_until_complete(receive_disconnect())
         self.state_manager.is_wifi_receiving = False    
            
     

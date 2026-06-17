@@ -53,4 +53,14 @@ async def disconnect():
         requests.get(url=disconnect_url)
     except:
         pass
-    
+
+
+async def receive_disconnect():
+    machine_id = get_machine_id()
+    if client and client._open:
+        await client.close()        
+    try:
+        disconnect_url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('RECEIVE_DISCONNECT','')}/{machine_id}"
+        requests.get(url=disconnect_url)
+    except:
+        pass
