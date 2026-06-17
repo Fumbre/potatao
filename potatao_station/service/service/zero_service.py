@@ -18,7 +18,6 @@ def store_pefered_language(machine_id:str,lang:str,db:Session)->dict:
     language:Language  = db.scalar(select(Language).where(Language.iso_code == lang))
     ## get pico and language relationship
     user_lang:UserLanguage = db.scalar(select(UserLanguage).where(UserLanguage.pico_id == pico.id))
-    print(language.id)
     if user_lang:
         user_lang.language_id = language.id
     else:
@@ -73,13 +72,32 @@ def construct(data:bytes,websocket_manager:WebsocketManager,machine_id:str)->byt
    final_data = bytearray()
    final_data.append(data[0])
    # get language list in Redis
-   # languages_list = json.loads(RedisClient.get(f"user_language"))
-   # length = len(languages_list)
-   final_data.append(1)
-   final_data.append(0x01)
-   # for language in languages_list:
-   #     final_data.append(language["binary_code"])
+   languages_list = json.loads(RedisClient.get(f"user_language"))
+   length = len(languages_list)
+   final_data.append(length)
+   for language in languages_list:
+       final_data.append(languages_list[language]["binary_code"])
    audio_data = data[9:]
    final_data.extend(audio_data)
    key = RedisClient.get(f"llm_data_key:{machine_id}")
    return AESUtil.encrypt_bytes(key,final_data)
+
+# def construct(data:bytes,websocket_manager:WebsocketManager,machine_id:str)->bytes:
+#    ws =  websocket_manager.active_sessions
+#    machines = []
+#    for machine in ws:
+#        if machine != machine_id:
+#            machines.append(machine)
+#    final_data = bytearray()
+#    final_data.append(data[0])
+#    # get language list in Redis
+#    # languages_list = json.loads(RedisClient.get(f"user_language"))
+#    # length = len(languages_list)
+#    final_data.append(1)
+#    final_data.append(0x01)
+#    # for language in languages_list:
+#    #     final_data.append(language["binary_code"])
+#    audio_data = data[9:]
+#    final_data.extend(audio_data)
+#    key = RedisClient.get(f"llm_data_key:{machine_id}")
+#    return AESUtil.encrypt_bytes(key,final_data)

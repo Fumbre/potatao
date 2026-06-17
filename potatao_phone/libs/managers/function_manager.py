@@ -7,12 +7,12 @@ from libs.managers.state_manager import StateManager
 import uasyncio
 import struct
 from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive
-from libs.encrpytion.encryption import shake_hands
+from libs.encrpytion.encryption import shake_hands,receive_hand_shake
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
-from libs.encrpytion.encryption import register, encrypt_data,decrypt_data
+from libs.encrpytion.encryption import register, encrypt_data,decrypt_data,CONVERSATION_AES_KEY,RECEIVE_AES_KEY
 from libs.language.language_setting import init_language
 from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
@@ -290,6 +290,8 @@ class FunctionManager:
 
 
     def start_receive_translate_audio(self, context):
+        #shake hand with pico
+        receive_hand_shake()
         # - connect to websocket
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
@@ -304,7 +306,7 @@ class FunctionManager:
         loop = uasyncio.get_event_loop()
         orginal_data = loop.run_until_complete(ws_receive())
         # decrypt data
-        raw_audio = decrypt_data(orginal_data)
+        raw_audio = decrypt_data(orginal_data,RECEIVE_AES_KEY)
         # play audio with speaker
         self.speaker.play_chunk(raw_audio)
     
@@ -489,7 +491,7 @@ class FunctionManager:
             lang = self.state_manager.prefered_language_binary
             print(lang)
             packet = struct.pack(HEADER_FMT, lang, b'\x00' * 8) + chunk
-            encrypted_data = encrypt_data(packet)
+            encrypted_data = encrypt_data(packet,CONVERSATION_AES_KEY)
             self.queue.put_nowait(encrypted_data)
             
 

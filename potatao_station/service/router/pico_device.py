@@ -47,7 +47,6 @@ async def remove(machine_id:str,session:Session = Depends(DB.get_session))->Base
 @router.post("/authorize")
 async def pico_authentication(pico_auth:PicoDeviceRequest,db:Session = Depends(DB.get_session))->BaseResponse:
     data = PicoAuthentication(**TokenUitl.decode_token(pico_auth.data))
-    print(f"[Station] authorize called for machine_id={data['machine_id']}")
     if not RedisClient.sexist("pico_device", data["machine_id"]):
         raise BusinessException("This machine does not register, please register firstly!", 500)
     private_key,public_key = X25519MUtil.generate_keypair()
@@ -92,3 +91,19 @@ async def disconnect(machine_id:str)->BaseResponse:
 @router.get("/registeration/check/{machine_id}")
 async def is_registered(machine_id:str)->BaseResponse:
     return BaseResponse.success(data=RedisClient.sexist("pico_device", machine_id))
+
+
+@router.post("/receive/handshake")
+async def receive_hand_shake(pico_auth:PicoDeviceRequest,db:Session = Depends(DB.get_session))->BaseResponse:
+    data = PicoAuthentication(**TokenUitl.decode_token(pico_auth.data))
+    if not RedisClient.sexist("pico_device", data["machine_id"]):
+        raise BusinessException("This machine does not register, please register firstly!", 500)
+    private_key, public_key = X25519MUtil.generate_keypair()
+    aes_key = X25519MUtil.generate_data_encrypting_key(private_key, pico_public_key=data["pico_public_key"])
+    RedisClient.set(f"receive_pico_data_key:{data['machine_id']}", aes_key)
+    store_pefered_language(machine_id=data["machine_id"], lang=data["prefered_language"], db=db)
+    return BaseResponse.success(data=public_key)
+
+
+
+

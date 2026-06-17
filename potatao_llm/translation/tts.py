@@ -39,7 +39,8 @@ class PiperTTS(BaseTTS):
         "Ukrainian":  "uk_UA-lada-x_low",
         "Russian":    "ru_RU-ruslan-medium",
         "Polish":     "pl_PL-mls-medium",
-        "Chinese":    "zh_CN-huayan-medium"
+        "Chinese":    "zh_CN-huayan-medium",
+        "Russian":    "ru_RU-ruslan-medium"
     }
 
     # Default voice used when the target language has no mapping

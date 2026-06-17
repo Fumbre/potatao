@@ -40,6 +40,7 @@ async def lifespan(app:FastAPI):
     HttpUtil.init(base_url=ZERO_BASE_URL)
     # get language data
     language_list = await HttpUtil.get(url=LANGUAGE_API)
+    print(language_list)
     #put language list into redis
     RedisClient.set("lang_list",json.dumps(language_list))
     print("potatao llm start successfully!")

@@ -41,7 +41,7 @@ async def audio_endpoint(target_id:str,websocket: WebSocket):
     """
     
     spliter = PCMFrameSplitter(frame_size=640)
-    vad = StreamingVAD(max_seconds=6,holdover_seconds=0.6)
+    vad = StreamingVAD(max_seconds=4,holdover_seconds=0.6)
 
     
     await websocket.accept()
@@ -99,7 +99,7 @@ def parse_data(data:bytes,target_id:str):
     
     for l in _get_language_list():
         for lang_byte in target_language_byte:
-            if ord(language["binary_code"]) == lang_byte:
+            if ord(l["binary_code"]) == lang_byte:
                 lang_list.append(l["iso_code"])
                 break
     

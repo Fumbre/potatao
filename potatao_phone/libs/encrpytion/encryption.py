@@ -11,6 +11,7 @@ import ujson
 import jwt
 
 CONVERSATION_AES_KEY = None
+RECEIVE_AES_KEY = None
 
 def register():
     ## configuration information from env
@@ -62,7 +63,36 @@ def shake_hands(prefered_language:str):
     res.close()
     #generate aes key
     CONVERSATION_AES_KEY = generate_aes_key(private_key,zero_public_key=zero_public_key,secret_key=secret_key)
-    print(CONVERSATION_AES_KEY)
+
+
+def receive_hand_shake(prefered_language:str):
+    global RECEIVE_AES_KEY
+    ## configuration information from env
+    config = load_env()
+    ## get pico machine id
+    machine_id = get_machine_id()
+    private_key,public_key = x25519.generate_keypair()
+    #get secret key
+    secret_key = config.get("SECRET_KEY","")
+    payload = {
+        "machine_id":machine_id,
+        "pico_public_key":bytes_to_hex(public_key),
+        "prefered_language":prefered_language
+    }
+    token = jwt.create_token(ujson.dumps(payload),secret_key)
+    data = {
+        "data":token
+    }
+    # get zero public key
+    key_url = f"http://{config.get('ZERO_IP','')}:{config.get('ZERO_PORT','')}{config.get('RECEIVE_HAND_SHAKE','')}"
+    res:Response = requests.post(url=key_url,json=data)
+    res_data = res.json()
+    zero_public_key = res_data["data"]
+    res.close()
+    #generate aes key
+    RECEIVE_AES_KEY = generate_aes_key(private_key,zero_public_key=zero_public_key,secret_key=secret_key)
+    
+    
 
 def get_machine_id()->str:
     return ubinascii.hexlify(machine.unique_id()).decode("utf-8")
@@ -84,10 +114,9 @@ def generate_aes_key(pico_private_key: bytes, zero_public_key: str, secret_key: 
     return ubinascii.hexlify(aes_bytes).decode('utf-8')
 
 
-def encrypt_data(payload:bytes)->bytes:
-    global CONVERSATION_AES_KEY
-    if not CONVERSATION_AES_KEY: return b''
-    aes_key = ubinascii.unhexlify(CONVERSATION_AES_KEY)
+def encrypt_data(payload:bytes,key:str)->bytes:
+    if not key: return b''
+    aes_key = ubinascii.unhexlify(aes_key)
     pad_len = 16 - (len(payload) % 16)
     padded_data = payload + bytes([pad_len] * pad_len)
     
@@ -98,9 +127,8 @@ def encrypt_data(payload:bytes)->bytes:
     return iv + cipher_text
 
 
-def decrypt_data(data: bytes) -> bytes:
-    global CONVERSATION_AES_KEY
-    if CONVERSATION_AES_KEY is None:
+def decrypt_data(data: bytes,key:str) -> bytes:
+    if key is None:
         return b''
     if not data:
         return b''
@@ -112,3 +140,5 @@ def decrypt_data(data: bytes) -> bytes:
     pad_len = decrypted_pad[-1]
     raw_data_binary = decrypted_pad[:-pad_len]
     return raw_data_binary
+
+

@@ -28,7 +28,7 @@ async def websocket_endpoint(machine_id: str, ws: WebSocket):
     aes_key = RedisClient.get(f"pico_data_key:{machine_id}")
     worker_task = asyncio.create_task(s3_upload_worker(session_id, audio_queue))
     translation_task = asyncio.create_task(translation_worker(machine_id, translation_queue, translated_queue,target_id=machine_id))
-    send_task = asyncio.create_task(translated_sender(ws,aes_key,translated_queue))
+    send_task = asyncio.create_task(translated_sender(machine_id,manager,aes_key,translated_queue))
     try:
         while True:
             raw_data = await ws.receive_bytes()
@@ -85,20 +85,26 @@ async def translation_worker(machine_id: str, queue: Queue, translation_queue: Q
         print(f"!!! Translation Worker Crashed: {e}")
 
 
-async def translated_sender(ws:WebSocket,aes_key:str,queue:Queue):
+async def translated_sender(machine_id:str,manager:WebsocketManager,aes_key:str,queue:Queue):
+    languages:dict = json.loads(RedisClient.get("user_language"))
     while True:
         data = await queue.get()
         if data is None:
             break
-        encrypted_data:bytes = AESUtil.encrypt_bytes(aes_key, data)
-        # await ws.send_bytes(encrypted_data)
+        binary_code, audio_data = data
+        encrypted_data:bytes = AESUtil.encrypt_bytes(aes_key, audio_data)
+        sessions =  manager.active_sessions
+        for machine in sessions:
+            if machine != machine_id:
+                if languages[machine]["binary_code"] == binary_code:
+                    await sessions[machine].send_bytes(encrypted_data)
         queue.task_done()
 
 
-async def receiver(ws:WebSocket,session_id_list:dict,recv_key:str,translation_queue:Queue):
+async def receiver(ws,session_id_list:dict,recv_key:str,translation_queue:Queue):
     async for message in ws:
-        print(recv_key,"aes_key")
         final_data = AESUtil.decrypt_bytes(recv_key, message)
+        print(f"[Receiver] final_data len={len(final_data)}")
         offset = 0
         while offset < len(final_data):
             binary_code = final_data[offset]
@@ -109,5 +115,5 @@ async def receiver(ws:WebSocket,session_id_list:dict,recv_key:str,translation_qu
             offset += audio_len
             session_id = session_id_list[str(binary_code)]
             if session_id:
-                await run_in_threadpool(S3Util.upload_parts, session_id, data=audio_data)
-            await translation_queue.put(audio_data)
+                await run_in_threadpool(S3Util.upload_parts, session_id = session_id, data=audio_data)
+            await translation_queue.put((binary_code, audio_data))
