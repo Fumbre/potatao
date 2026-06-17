@@ -291,7 +291,7 @@ class FunctionManager:
 
     def start_receive_translate_audio(self, context):
         #shake hand with pico
-        receive_hand_shake()
+        receive_hand_shake(self.state_manager.prefered_language)
         # - connect to websocket
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
