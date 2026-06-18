@@ -2,35 +2,16 @@
 
 class StateManager:
     def __init__(self, function_manager = None):
-        # UI
         self._stack   = []
         self._cursors = {1: 0}
-
-        # MIC
         self.is_recording = False
-
-        # NRF
+        self.is_receiving  = False        
         self.is_nrf_sending = False
         self.is_nrf_receiving = False
-
-        # SPEAKER
         self.is_playing = False
-
-        # PART
-        self.rec_destination = "sd" # "wifi" | "sd"
+        self.rec_destination = "sd" # "wifi" | "nrf" | "sd"
         self.function_manager = function_manager
         self.prefer_language = "en" # "en" | "ru" | "tr"
-
-        # LANG
-        self.prefered_language = 'en' # "en" default - binary code of languages
-        self.prefered_language_binary = 0x02 # "en" default - binary code of languages
-
-        # WIFI
-        self.is_wifi_connecting = False
-        self.is_wifi_connected = False
-        self.is_wifi_sending  = False
-        self.is_wifi_receiving  = False
-        
 
     def push_stack(self, context: dict = {}):
         self._stack.append(context)
@@ -101,13 +82,7 @@ class StateManager:
             self.function_manager._stop_speaker()
             return True
         
-        print("hasdfasfdasfdasdfl")
-
         if self.depth() > 1:
-
-            if self.current_stack()["id"] == 99:
-                self.function_manager.stop_receive_translated_audio()
-            
             # Wipe out old nested track pointers to prevent index overlap bugs
             if self.depth() in self._cursors:
                 del self._cursors[self.depth()]
@@ -135,27 +110,14 @@ class StateManager:
     def handle_recording(self, pressed: bool):
         if self.is_playing:
             self.function_manager._stop_speaker()
-
-        current_item = self.current_stack()
-
-        self.rec_destination = current_item[0]["record_method"]
         
-        if pressed and not self.is_recording and self.rec_destination == "sd":
+        if pressed and not self.is_recording:
             self.is_recording = True
             self.function_manager.start_recording()
 
-        elif not pressed and self.is_recording and self.rec_destination == "sd":
+        elif not pressed and self.is_recording:
             self.is_recording = False
             self.function_manager.stop_recording()
-
-        if pressed and not self.is_recording and self.rec_destination == "wifi":
-            self.is_recording = True
-            self.function_manager.recording_to_backend()
-
-        elif not pressed and self.is_recording and self.rec_destination == "wifi":
-            self.is_recording = False
-            self.function_manager.stop_wifi_recording()
-        
 
 
     # ── DEBUG ────────────────────────────────────────────
@@ -164,5 +126,5 @@ class StateManager:
         print(f"Stack depth: {self.depth()}")
         for i, (ctx) in enumerate(self._stack):
             print(f"  [{i}] {ctx}")
-        print(f"  cursor={self.cursor()} recording={self.is_recording} path={self.rec_destination}")
+        print(f"  cursor={self.cursor()} recording={self.is_recording}")
         # print(f"  list={self._list}") view list of rendered item
