@@ -63,7 +63,6 @@ async def pico_authentication(pico_auth:PicoDeviceRequest,db:Session = Depends(D
     result = await HttpUtil.get(url=f"/llm/shakeHand",params={"token":llm_token})
     llm_public_key = result.get("data")
     translated_aes_key = X25519MUtil.generate_data_encrypting_key(private_key,pico_public_key=llm_public_key)
-    print(f"[Station] translated_aes_key={translated_aes_key}")  # ← 加这行
     RedisClient.set(f"llm_data_key:{data['machine_id']}",translated_aes_key)
     start_translated_audio_session(original_machine_id=data["machine_id"],language_dict=language_dict,key=llm_public_key)
     return BaseResponse.success(data=public_key)

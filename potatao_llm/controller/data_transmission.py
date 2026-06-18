@@ -64,13 +64,11 @@ async def audio_endpoint(target_id:str,websocket: WebSocket):
                 if result is None:
                     continue     
                 signal,payload = result
-                if signal == "silence":
-                    await websocket.send_bytes(payload)
-                elif signal == "speech_ready":
+                if signal == "speech_ready":
                     await _run_pipeline(ws=websocket,target_id=target_id,source_language=source_language,target_language=target_language_list,audio_data=payload)
             
-    except WebSocketDisconnect:
-        print("[Server] Pi Zero disconnected.")
+    except WebSocketDisconnect as e:
+        print(f"[Server] Pi Zero disconnected. {e}")
     except Exception as e:
         print(f"[Server] Error: {e}")
  
@@ -137,13 +135,13 @@ async def _run_pipeline(ws:WebSocket,target_id:str,source_language:str, target_l
         if binary_code is None:
            continue
         audio_len = len(translated_audio)
+        print(binary_code,"test------------------------------")
         response_packet += bytes([binary_code]) + audio_len.to_bytes(4, "big") + translated_audio
     
     # encrypt data
     aes_key = RedisClient.get(f"aes_key:{target_id}")
-    print(f"[LLM] encrypt key={aes_key}")
     final_data =  AESUtil.encrypt_bytes(aes_key,response_packet)
-    #send back to zero  
+    #send back to zero 
     await ws.send_bytes(final_data)
 
 
