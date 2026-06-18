@@ -1,6 +1,4 @@
 from machine import I2S, Pin
-import struct
-import time
 import mic_dsp  # our C module
 
 class Mic:
@@ -41,42 +39,6 @@ class Mic:
             bytes_written = mic_dsp.convert(self.mv[:num_read], self.out_buf, self.GAIN)
             return memoryview(self.out_buf)[:bytes_written]
         return None
-    
-    # put it somewhere with wifi related
-    # wifi sender adds header when needed
-    # def send_wifi(chunk, seq_num, record_start_ms):
-    #     timestamp_ms = time.ticks_diff(time.ticks_ms(), record_start_ms)
-    #     header = struct.pack('<II', seq_num, timestamp_ms)
-    #     sock.sendto(header + chunk, (server_ip, server_port))
-
-    # #def process(self, sock, server_ip, server_port):
-    # def process(self): 
-    #     num_read = self.mic_I2S.readinto(self.buf)
-    #     if num_read > 0:
-    #         # C does the whole conversion in microseconds
-    #         bytes_written = mic_dsp.convert(
-    #             self.mv[:num_read],
-    #             self.out_buf,
-    #             self.GAIN
-    #         )
-
-    #         timestamp_ms = time.ticks_diff(
-    #             time.ticks_ms(), self.record_start_ms
-    #         )
-    #         header = struct.pack('<II', self.seq_num, timestamp_ms)
-
-    #         self.seq_num += 1
-    #         return header + self.out_buf[:bytes_written]
-    #         # try:
-    #         #     sock.sendto(
-    #         #         header + self.out_buf[:bytes_written],
-    #         #         (server_ip, server_port)
-    #         #     )
-    #         #     self.seq_num += 1
-    #         # except:
-    #         #     pass
-    
-            
 
     def deinit(self):
         if self.mic_I2S is None:

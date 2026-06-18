@@ -6,6 +6,7 @@ from common.aws3.s3 import S3Util
 from common.encrptytion.jwt.jwttoken import TokenUitl
 from common.encrptytion.aes.aes import AESUtil
 from common.encrptytion.x25519.x25519 import X25519MUtil
+from common.http.http import HttpUtil
 from service.config.config import settings
 
 
@@ -21,6 +22,9 @@ async def lifespan(app:FastAPI):
     TokenUitl.init(secrect_key=settings.project.token_secret_key)
     AESUtil.init()
     X25519MUtil.init(secret_key=settings.project.token_secret_key)
+    #init http util client
+    HttpUtil.init(base_url=settings.project.llm_url)
     print("potatao station start successfully!")
     yield
+    await HttpUtil.close()
     print("potatao station close successfully!")

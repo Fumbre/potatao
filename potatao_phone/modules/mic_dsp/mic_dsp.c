@@ -55,6 +55,7 @@ static const mp_rom_map_elem_t mic_dsp_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_mic_dsp)},
     {MP_ROM_QSTR(MP_QSTR_convert), MP_OBJ_FROM_PTR(&mic_dsp_convert_obj)},
 };
+
 static MP_DEFINE_CONST_DICT(mic_dsp_module_globals, mic_dsp_module_globals_table);
 
 const mp_obj_module_t mic_dsp_module = {

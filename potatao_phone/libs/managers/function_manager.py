@@ -3,7 +3,20 @@ import os
 import struct
 import gc
 from libs.data_query.ui import get_view
-import utime 
+from libs.managers.state_manager import StateManager
+import uasyncio
+import struct
+from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive,receive_disconnect,receive_ws_connect
+from libs.encrpytion.encryption import shake_hands,receive_hand_shake
+from libs.mic.mic import Mic
+from libs.nrf24.nrf24l01 import NRF24L01
+from libs.wifi.wifi import Wifi
+from libs.speaker.speaker import Speaker
+from libs.encrpytion import encryption
+from libs.language.language_setting import init_language
+from libs.managers.queue import SimpleQueue,HEADER_FMT
+import utime
+
 
 class FunctionManager:
     # WAV constants
@@ -11,8 +24,12 @@ class FunctionManager:
     NUM_CHANNELS   = 1
     BITS_PER_SAMPLE = 16
     MIC_HEADER_SIZE = 8   # seq_num (4B) + timestamp_ms (4B)
+    
+    
 
-    def __init__(self, state_manager, db, wifi=None, nrf=None, mic=None, sd=None, speaker=None):
+    def __init__(self, state_manager:StateManager, db, wifi:Wifi=None, nrf:NRF24L01=None, mic:Mic=None, sd=None, speaker:Speaker=None):
+              
+        self.out_buf = bytearray(1024)  # preallocated, no GC pressure   
         self.state_manager = state_manager
         self.db = db
         self.wifi = wifi
@@ -47,10 +64,8 @@ class FunctionManager:
         # registry — name -> methods
         self._registry = {
             "link":           self._link,
-            "send_wifi":      self._send_wifi,
             "send_nrf":       self._send_nrf,
             "receive_nrf":    self._receive_nrf,
-            "write_sd":       self._write_sd,
             "get_sdcard_data": self._get_sdcard_data,
             "send_data_to_nrf":    self._send_data_to_nrf, 
             "send_nrf_chunk": self._send_nrf_chunk,
@@ -59,7 +74,19 @@ class FunctionManager:
             "start_speaker": self._start_speaker,
             "stop_speaker": self._stop_speaker,
             "pop_back": self._back_to_prev_menu,
+            "link_wifi": self._link_wifi,
+            "change_language": self.change_language,
+            "set_language": self.set_language,
+            "receive_translate_auido": self.start_receive_translate_audio
         }
+        
+        ## define the data transmitation structure
+        self.data = {}
+        ## define async task queue
+        self.queue = SimpleQueue(maxsize=20)
+        self.network_task = None
+
+        self.LANGUAGE_DICT = {}
 
         # the menu folder for getting correct directory
         self.menu_folder = None
@@ -97,17 +124,24 @@ class FunctionManager:
         self.state_manager.pop_stack()
         return True
 
-    def _send_wifi(self, context: dict) -> bool:
-        """rec button → send audio via wifi"""
-        if self.wifi is None:
-            print("[FunctionManager] WiFi not available")
-            return False
-        
-        self.wifi.connect()
-        
-        self.state_manager.rec_destination = "wifi"
-        return True
 
+    def _link_wifi(self, item: dict) -> bool:
+        """Show notification right after a link that wifi is connecting"""
+        parent_id = item["id"]
+        rows = get_view(self.db, parent_id, "/sd/potatao.db")
+
+        if not rows:
+            print(f"[FunctionManager] No children for id {parent_id}")
+            return False
+
+
+        self.state_manager.push_stack(rows)
+        self.state_manager.reset_cursor()
+
+        if not self.state_manager.is_wifi_connected:
+            self.state_manager.is_wifi_connecting = True
+
+        return True
 
 
     def _send_nrf(self, context: dict):
@@ -254,7 +288,45 @@ class FunctionManager:
         print(f"DONE")
 
 
+    def start_receive_translate_audio(self, context):
+        #shake hand with pico
+        receive_hand_shake(self.state_manager.prefered_language)
+        # - connect to websocket
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(receive_ws_connect())
+        self.speaker.init()
+        self.state_manager.is_wifi_receiving = True
+        self.state_manager.push_stack({
+            'id': 99,
+            'record_method': 'wifi',
+            'name': 'chat',
+            'parent_id': 15, 
+            'function_name': 'recevied_from_back_to_speaker'
+        })
+        # - if playing on speaker is impossible or bad
+        # - put the received data to sd card
+        
+    
+    def receiving_translated_audio(self):
+        #receive data from websocket
+        loop = uasyncio.get_event_loop()
+        orginal_data = loop.run_until_complete(ws_receive())
+        # decrypt data
+        raw_audio = encryption.decrypt_data(orginal_data,encryption.RECEIVE_AES_KEY)
+        # play audio with speaker
+        self.speaker.play_chunk(raw_audio)
 
+    
+    def stop_receive_translated_audio(self):
+        ## close websocket connection
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(disconnect())
+        #deinit speaker
+        self.speaker.deinit()
+        loop.run_until_complete(receive_disconnect())
+        self.state_manager.is_wifi_receiving = False    
+           
+    
     
     def _start_speaker(self, context: dict):
         self.speaker.init()
@@ -299,22 +371,12 @@ class FunctionManager:
             pass
 
 
-
-
-    def _write_sd(self, context: dict) -> bool:
-        self.state_manager.rec_destination = "sd"
-        return True
-
     def _get_sdcard_data(self, context: dict, function_name: str = 'start_speaker') -> bool:
         """
          if context is not "recording" or "received"
          then  folder is "sd/recordings"
          else  folder is "sd/" or "sd/received"
         """
-
-        print("from get sd card data", context["name"])
-
-        print("function name:", function_name)
 
         if context["name"] != "recordings" and context["name"] != "received":
             folder ="/sd/recordings"
@@ -385,7 +447,57 @@ class FunctionManager:
         self._rec_file.write(bytearray(44))        # placeholder WAV header
 
         self.mic.init()                            # start I2S only after SD is done
-        print(f"[FunctionManager] Recording started → {path}")
+        # print(f"[FunctionManager] Recording started → {path}")
+
+    def wifi_connect(self): 
+        self.state_manager.is_wifi_connected = self.wifi.connect()
+        self.state_manager.is_wifi_connecting = not self.state_manager.is_wifi_connected
+
+        if self.state_manager.is_wifi_connected :
+            print('we are connected')
+        return self.state_manager.is_wifi_connected
+
+    def connect_to_backend(self):
+        """reigester pico device to zero"""
+        # self.state_manager.rec_destination = "wifi"
+
+        encryption.register()
+        
+        self.LANGUAGE_DICT = init_language() # after connection
+
+
+    def recording_to_backend(self):
+        self.mic.init()
+        
+        # exchange encryption key with zero
+        shake_hands(prefered_language=self.state_manager.prefered_language)
+        # open websocket connection
+        loop = uasyncio.get_event_loop()
+        loop.run_until_complete(ws_connect())
+        self.network_task = loop.create_task(ws_send(self.queue))
+
+        # change state to wifi sending
+        self.state_manager.is_wifi_sending = True
+                
+    def send_wifi_chunk(self):
+        """send a chunk by wifi — called every loop while recording"""
+        if self.mic is None:
+            return
+        
+        raw_slice = self.mic.process()
+        if not raw_slice or len(raw_slice) <= 0:
+            return
+        chunk = bytes(raw_slice)
+        #create ws_send asyncio task
+        if not self.queue.full():
+            lang = self.state_manager.prefered_language_binary
+            print(lang)
+            packet = struct.pack(HEADER_FMT, lang, b'\x00' * 8) + chunk
+            print(encryption.CONVERSATION_AES_KEY)
+            encrypted_data = encryption.encrypt_data(packet,encryption.CONVERSATION_AES_KEY)
+            print(len(encrypted_data),"enr------")
+            self.queue.put_nowait(encrypted_data)
+            
 
     def write_chunk(self):
         """write one mic chunk — called every loop while recording"""
@@ -398,7 +510,7 @@ class FunctionManager:
 
         self._rec_file.write(chunk)
         self._rec_byte_count += len(chunk)
-
+        
 
     def stop_recording(self):
         """fix WAV header and close file — called when REC released"""
@@ -412,15 +524,21 @@ class FunctionManager:
             self._make_wav_header(self._rec_byte_count)
         )
         self._rec_file.close()
-        self._rec_file       = None
+        self._rec_file = None
         self._rec_byte_count = 0
         print("[FunctionManager] Recording stopped and saved")
         try:
             os.sync()
         except:
             pass
-
-
+    
+    def stop_wifi_recording(self):
+        self.state_manager.is_wifi_sending = False
+        ##stop async task
+        self.network_task.cancel()
+        self.network_task = None
+        ##  websocket disconnection
+        uasyncio.get_event_loop().run_until_complete(disconnect())
 
     def _make_wav_header(self, data_size: int) -> bytes:
         byte_rate   = self.SAMPLE_RATE * self.NUM_CHANNELS * self.BITS_PER_SAMPLE // 8
@@ -438,6 +556,31 @@ class FunctionManager:
             self.BITS_PER_SAMPLE,
             b'data', data_size
         )
+
+    def change_language(self, context):
+        stck = []
+
+        for index, lang in enumerate(self.LANGUAGE_DICT):
+            stck.append({
+                'id': index,
+                'record_method': 'wifi',
+                'name': lang,
+                'parent_id': 0,
+                'function_name': 'set_language',
+                'binary_code': self.LANGUAGE_DICT[lang]['binary_code'],
+                'iso_code': self.LANGUAGE_DICT[lang]['iso_code'],
+            })
+        self.state_manager.push_stack(stck)
+        return True
+
+    def set_language(self, context):
+        print("set_language", context)
+
+        self.state_manager.prefered_language = context["iso_code"]
+        self.state_manager.prefered_language_binary = ord(context["binary_code"])
+
+        self.state_manager.pop_stack()
+        return True
 
     def _ensure_folder(self, path: str):
         """creates folder if it doesn't exist"""

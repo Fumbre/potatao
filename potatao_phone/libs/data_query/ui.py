@@ -11,7 +11,7 @@ def get_view(db, parent_id, sql_path: str = None):
     db.row_type = "dict"
 
     result = db.execute(
-        "SELECT id, parent_id,name, function_name FROM potatao_ui WHERE parent_id=? ORDER BY order_num ASC", 
+        "SELECT id, parent_id,name, function_name, record_method FROM potatao_ui WHERE parent_id=? ORDER BY order_num ASC", 
         parent_id
     ).fetchall()
 
