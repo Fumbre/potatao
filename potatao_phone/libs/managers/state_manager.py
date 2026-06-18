@@ -100,7 +100,13 @@ class StateManager:
             self.function_manager._stop_speaker()
             return True
         
+        print("hasdfasfdasfdasdfl")
+
         if self.depth() > 1:
+
+            if self.current_stack()["id"] == 99:
+                self.function_manager.stop_receive_translated_audio()
+            
             # Wipe out old nested track pointers to prevent index overlap bugs
             if self.depth() in self._cursors:
                 del self._cursors[self.depth()]

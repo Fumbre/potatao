@@ -295,20 +295,32 @@ class FunctionManager:
         # - connect to websocket
         loop = uasyncio.get_event_loop()
         loop.run_until_complete(ws_connect())
+        print("asfdasfdasdfasdf asdf asdf asdf asdf ")
         self.speaker.init()
         self.state_manager.is_wifi_receiving = True
+        self.state_manager.push_stack({
+            'id': 99,
+            'record_method': 'wifi',
+            'name': 'chat',
+            'parent_id': 15, 
+            'function_name': 'recevied_from_back_to_speaker'
+        })
         # - if playing on speaker is impossible or bad
         # - put the received data to sd card
         
     
     def receiving_translated_audio(self):
         #receive data from websocket
+        print("shit")
+
         loop = uasyncio.get_event_loop()
         orginal_data = loop.run_until_complete(ws_receive())
         # decrypt data
         raw_audio = decrypt_data(orginal_data,RECEIVE_AES_KEY)
         # play audio with speaker
         self.speaker.play_chunk(raw_audio)
+        print("shit2")
+
     
     def stop_receive_translated_audio(self):
         ## close websocket connection

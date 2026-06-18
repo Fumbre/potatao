@@ -40,7 +40,7 @@ sd = sdcard.SDCard(spi, Pin(PIN_SDCARD_CS))
 vfs = os.VfsFat(sd)
 os.mount(vfs, "/sd")
 
-# os.remove("/sd/potatao.db")
+os.remove("/sd/potatao.db")
 
 # Display setup
 ui = UI()
@@ -174,7 +174,7 @@ try:
                 ui.notify(state_manager.rec_destination, "Recording...")
             if state_manager.is_wifi_connecting:
                 ui.notify("Wifi is", "Connecting...")
-            state_manager.debug()
+            # state_manager.debug()
 
         
 

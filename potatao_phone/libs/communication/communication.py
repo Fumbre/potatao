@@ -40,6 +40,7 @@ async def ws_send(queue:SimpleQueue):
 async def ws_receive():
     if client and client._open:
         data = await client.recv()
+        print("2")
         return data
     return b""    
         
