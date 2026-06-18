@@ -29,7 +29,7 @@ class PiperTTS(BaseTTS):
     # Maps language names to Piper voice model names
     # Add more as needed: https://rhasspy.github.io/piper-samples/
     VOICE_MAP = {
-        "English":    "en_US-amy-medium",
+        "en":    "en_US-amy-medium",
         "French":     "fr_FR-upmc-medium",
         "German":     "de_DE-thorsten-medium",
         "Spanish":    "es_ES-carlfm-x_low",
@@ -37,10 +37,9 @@ class PiperTTS(BaseTTS):
         "Italian":    "it_IT-riccardo-x_low",
         "Portuguese": "pt_PT-tugao-medium",
         "Ukrainian":  "uk_UA-lada-x_low",
-        "Russian":    "ru_RU-ruslan-medium",
         "Polish":     "pl_PL-mls-medium",
-        "Chinese":    "zh_CN-huayan-medium",
-        "Russian":    "ru_RU-ruslan-medium"
+        "zh":    "zh_CN-huayan-medium",
+        "ru":    "ru_RU-ruslan-medium"
     }
 
     # Default voice used when the target language has no mapping

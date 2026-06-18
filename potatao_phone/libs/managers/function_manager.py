@@ -6,13 +6,13 @@ from libs.data_query.ui import get_view
 from libs.managers.state_manager import StateManager
 import uasyncio
 import struct
-from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive,receive_disconnect
+from libs.communication.communication import ws_connect,ws_send,disconnect,ws_receive,receive_disconnect,receive_ws_connect
 from libs.encrpytion.encryption import shake_hands,receive_hand_shake
 from libs.mic.mic import Mic
 from libs.nrf24.nrf24l01 import NRF24L01
 from libs.wifi.wifi import Wifi
 from libs.speaker.speaker import Speaker
-from libs.encrpytion.encryption import register, encrypt_data,decrypt_data,CONVERSATION_AES_KEY,RECEIVE_AES_KEY
+from libs.encrpytion import encryption
 from libs.language.language_setting import init_language
 from libs.managers.queue import SimpleQueue,HEADER_FMT
 import utime
@@ -138,7 +138,6 @@ class FunctionManager:
         self.state_manager.push_stack(rows)
         self.state_manager.reset_cursor()
 
-        print("we are here")
         if not self.state_manager.is_wifi_connected:
             self.state_manager.is_wifi_connecting = True
 
@@ -294,8 +293,7 @@ class FunctionManager:
         receive_hand_shake(self.state_manager.prefered_language)
         # - connect to websocket
         loop = uasyncio.get_event_loop()
-        loop.run_until_complete(ws_connect())
-        print("asfdasfdasdfasdf asdf asdf asdf asdf ")
+        loop.run_until_complete(receive_ws_connect())
         self.speaker.init()
         self.state_manager.is_wifi_receiving = True
         self.state_manager.push_stack({
@@ -311,15 +309,12 @@ class FunctionManager:
     
     def receiving_translated_audio(self):
         #receive data from websocket
-        print("shit")
-
         loop = uasyncio.get_event_loop()
         orginal_data = loop.run_until_complete(ws_receive())
         # decrypt data
-        raw_audio = decrypt_data(orginal_data,RECEIVE_AES_KEY)
+        raw_audio = encryption.decrypt_data(orginal_data,encryption.RECEIVE_AES_KEY)
         # play audio with speaker
         self.speaker.play_chunk(raw_audio)
-        print("shit2")
 
     
     def stop_receive_translated_audio(self):
@@ -382,10 +377,6 @@ class FunctionManager:
          then  folder is "sd/recordings"
          else  folder is "sd/" or "sd/received"
         """
-
-        print("from get sd card data", context["name"])
-
-        print("function name:", function_name)
 
         if context["name"] != "recordings" and context["name"] != "received":
             folder ="/sd/recordings"
@@ -470,7 +461,7 @@ class FunctionManager:
         """reigester pico device to zero"""
         # self.state_manager.rec_destination = "wifi"
 
-        register()
+        encryption.register()
         
         self.LANGUAGE_DICT = init_language() # after connection
 
@@ -494,17 +485,17 @@ class FunctionManager:
             return
         
         raw_slice = self.mic.process()
-
         if not raw_slice or len(raw_slice) <= 0:
             return
         chunk = bytes(raw_slice)
-        
         #create ws_send asyncio task
         if not self.queue.full():
             lang = self.state_manager.prefered_language_binary
             print(lang)
             packet = struct.pack(HEADER_FMT, lang, b'\x00' * 8) + chunk
-            encrypted_data = encrypt_data(packet,CONVERSATION_AES_KEY)
+            print(encryption.CONVERSATION_AES_KEY)
+            encrypted_data = encryption.encrypt_data(packet,encryption.CONVERSATION_AES_KEY)
+            print(len(encrypted_data),"enr------")
             self.queue.put_nowait(encrypted_data)
             
 

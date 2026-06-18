@@ -20,7 +20,19 @@ async def ws_connect():
    except Exception as e:
        print("Handshake failed:", e)
    return False
-   
+
+
+async def receive_ws_connect():
+   machine_id = get_machine_id()
+   ws_url = f"ws://{config.get('ZERO_IP')}:{config.get('ZERO_PORT')}{config.get('PICO_RECEIVE_WS')}/{machine_id}"
+   try:
+       if await uasyncio.wait_for(client.handshake(uri=ws_url), timeout=5):
+           await client.open() 
+           print("websocket connected successfully!")
+           return True
+   except Exception as e:
+       print("Handshake failed:", e)
+   return False
        
 
 

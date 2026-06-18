@@ -114,9 +114,10 @@ def generate_aes_key(pico_private_key: bytes, zero_public_key: str, secret_key: 
     return ubinascii.hexlify(aes_bytes).decode('utf-8')
 
 
+
 def encrypt_data(payload:bytes,key:str)->bytes:
     if not key: return b''
-    aes_key = ubinascii.unhexlify(aes_key)
+    aes_key = ubinascii.unhexlify(key)
     pad_len = 16 - (len(payload) % 16)
     padded_data = payload + bytes([pad_len] * pad_len)
     
@@ -132,7 +133,7 @@ def decrypt_data(data: bytes,key:str) -> bytes:
         return b''
     if not data:
         return b''
-    aes_key = ubinascii.unhexlify(CONVERSATION_AES_KEY)
+    aes_key = ubinascii.unhexlify(key)
     iv = data[:16]
     cipher_text = data[16:]
     aes_cipher = cryptolib.aes(aes_key, 2, iv)
