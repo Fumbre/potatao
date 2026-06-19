@@ -30,7 +30,7 @@ def test_sdcard():
     try:
         vfs = os.VfsFat(sd)
         os.mount(vfs, "/sd")
-        # print("✅ Mounted at /sd")
+        print("✅ Mounted at /sd")
     except Exception as e:
         print("❌ Mount failed:", e)
         return

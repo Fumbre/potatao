@@ -460,9 +460,9 @@ class FunctionManager:
     def connect_to_backend(self):
         """reigester pico device to zero"""
         # self.state_manager.rec_destination = "wifi"
-
-        encryption.register()
         
+        encryption.register()
+
         self.LANGUAGE_DICT = init_language() # after connection
 
 
